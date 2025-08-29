@@ -1,0 +1,237 @@
+import { defineAsyncComponent } from 'vue';
+import { createLazyComponent } from '@/composables/useLazyComponent';
+
+// Composants de chargement et d'erreur réutilisables
+export const LoadingComponent = {
+    template: `
+        <div class="animate-pulse p-4">
+            <div class="space-y-3">
+                <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+            </div>
+        </div>
+    `
+};
+
+export const ErrorComponent = {
+    template: `
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div class="flex items-center space-x-2">
+                <div class="h-5 w-5 bg-red-500 rounded-full"></div>
+                <div>
+                    <p class="text-sm font-medium text-red-800">Erreur de chargement</p>
+                    <p class="text-xs text-red-600">Impossible de charger le composant</p>
+                </div>
+            </div>
+        </div>
+    `
+};
+
+// Factory pour créer des composants lazy avec configuration standard
+export function createStandardLazyComponent(
+    loader: () => Promise<any>,
+    name: string,
+    customLoadingComponent?: any,
+    customErrorComponent?: any
+) {
+    return defineAsyncComponent({
+        loader,
+        loadingComponent: customLoadingComponent || LoadingComponent,
+        errorComponent: customErrorComponent || ErrorComponent,
+        delay: 200,
+        timeout: 10000,
+        suspensible: false,
+        onError(error, retry, fail, attempts) {
+            console.error(`Failed to load component ${name}:`, error);
+            
+            // Retry jusqu'à 3 fois avec backoff exponentiel
+            if (attempts < 3) {
+                const delay = Math.min(1000 * Math.pow(2, attempts - 1), 5000);
+                setTimeout(retry, delay);
+            } else {
+                fail();
+            }
+        }
+    });
+}
+
+// Définition des composants lazy pour l'application
+export const LazyComponents = {
+    // Graphiques et visualisations
+    RevenueChart: () => createStandardLazyComponent(
+        () => import('@/components/RevenueChart.vue'),
+        'RevenueChart',
+        {
+            template: `
+                <div class="animate-pulse">
+                    <div class="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+                    <div class="h-64 bg-gray-200 rounded"></div>
+                </div>
+            `
+        }
+    ),
+
+    // Tables et listes complexes
+    ClientsTable: () => createStandardLazyComponent(
+        () => import('@/pages/Clients/Partials/ClientsTable.vue'),
+        'ClientsTable',
+        {
+            template: `
+                <div class="animate-pulse space-y-4">
+                    <div class="grid grid-cols-4 gap-4">
+                        <div class="h-10 bg-gray-200 rounded"></div>
+                        <div class="h-10 bg-gray-200 rounded"></div>
+                        <div class="h-10 bg-gray-200 rounded"></div>
+                        <div class="h-10 bg-gray-200 rounded"></div>
+                    </div>
+                    ${Array(5).fill(0).map(() => `
+                        <div class="grid grid-cols-4 gap-4">
+                            <div class="h-8 bg-gray-100 rounded"></div>
+                            <div class="h-8 bg-gray-100 rounded"></div>
+                            <div class="h-8 bg-gray-100 rounded"></div>
+                            <div class="h-8 bg-gray-100 rounded"></div>
+                        </div>
+                    `).join('')}
+                </div>
+            `
+        }
+    ),
+
+    ProjectsTable: () => createStandardLazyComponent(
+        () => import('@/pages/Projects/Partials/ProjectsTable.vue'),
+        'ProjectsTable'
+    ),
+
+    EventsTable: () => createStandardLazyComponent(
+        () => import('@/pages/Events/Partials/EventsTable.vue'),
+        'EventsTable'
+    ),
+
+    // Formulaires complexes
+    ClientForm: () => createStandardLazyComponent(
+        () => import('@/pages/Clients/Partials/ClientForm.vue'),
+        'ClientForm',
+        {
+            template: `
+                <div class="animate-pulse space-y-6">
+                    <div class="space-y-4">
+                        <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+                        <div class="h-10 bg-gray-200 rounded"></div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+                        <div class="h-10 bg-gray-200 rounded"></div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+                        <div class="h-20 bg-gray-200 rounded"></div>
+                    </div>
+                </div>
+            `
+        }
+    ),
+
+    ProjectForm: () => createStandardLazyComponent(
+        () => import('@/pages/Projects/Partials/ProjectForm.vue'),
+        'ProjectForm'
+    ),
+
+    EventForm: () => createStandardLazyComponent(
+        () => import('@/pages/Events/Partials/EventForm.vue'),
+        'EventForm'
+    ),
+
+    // Composants de statistiques
+    StatsCards: () => createStandardLazyComponent(
+        () => import('@/pages/Dashboard/Partials/StatsCards.vue'),
+        'StatsCards',
+        {
+            template: `
+                <div class="animate-pulse grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    ${Array(4).fill(0).map(() => `
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <div class="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-3/4"></div>
+                        </div>
+                    `).join('')}
+                </div>
+            `
+        }
+    ),
+
+    RecentActivity: () => createStandardLazyComponent(
+        () => import('@/pages/Dashboard/Partials/RecentActivity.vue'),
+        'RecentActivity'
+    ),
+
+    // Modals et dialogues
+    ClientModal: () => createStandardLazyComponent(
+        () => import('@/pages/Clients/Partials/ClientModal.vue'),
+        'ClientModal'
+    ),
+
+    ProjectModal: () => createStandardLazyComponent(
+        () => import('@/pages/Projects/Partials/ProjectModal.vue'),
+        'ProjectModal'
+    ),
+
+    EventModal: () => createStandardLazyComponent(
+        () => import('@/pages/Events/Partials/EventModal.vue'),
+        'EventModal'
+    ),
+
+    // Composants d'exportation
+    ExportModal: () => createStandardLazyComponent(
+        () => import('@/components/Modals/ExportModal.vue'),
+        'ExportModal'
+    ),
+
+    // Composants de settings
+    SettingsPanel: () => createStandardLazyComponent(
+        () => import('@/pages/Settings/Partials/SettingsPanel.vue'),
+        'SettingsPanel'
+    )
+};
+
+// Fonction pour précharger les composants critiques
+export const preloadCriticalComponents = async () => {
+    const criticalComponents = [
+        LazyComponents.StatsCards,
+        LazyComponents.RecentActivity
+    ];
+
+    try {
+        await Promise.allSettled(criticalComponents.map(loader => loader()));
+        console.log('Critical components preloaded successfully');
+    } catch (error) {
+        console.warn('Some critical components failed to preload:', error);
+    }
+};
+
+// Fonction pour précharger les composants selon la route
+export const preloadRouteComponents = async (routeName: string) => {
+    const routeComponentsMap: Record<string, (() => any)[]> = {
+        'dashboard': [LazyComponents.RevenueChart, LazyComponents.StatsCards],
+        'clients.index': [LazyComponents.ClientsTable],
+        'clients.create': [LazyComponents.ClientForm],
+        'clients.edit': [LazyComponents.ClientForm],
+        'projects.index': [LazyComponents.ProjectsTable],
+        'projects.create': [LazyComponents.ProjectForm],
+        'projects.edit': [LazyComponents.ProjectForm],
+        'events.index': [LazyComponents.EventsTable],
+        'events.create': [LazyComponents.EventForm],
+        'events.edit': [LazyComponents.EventForm]
+    };
+
+    const componentsToLoad = routeComponentsMap[routeName] || [];
+    
+    if (componentsToLoad.length > 0) {
+        try {
+            await Promise.allSettled(componentsToLoad.map(loader => loader()));
+            console.log(`Components for route ${routeName} preloaded successfully`);
+        } catch (error) {
+            console.warn(`Some components for route ${routeName} failed to preload:`, error);
+        }
+    }
+};

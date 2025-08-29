@@ -1,0 +1,248 @@
+<?php
+
+namespace App\Http\Requests;
+
+use App\Enums\EventType;
+use App\Enums\EventStatus;
+use App\Enums\PaymentStatus;
+use App\Enums\EventCategory;
+use App\Models\Project;
+use App\Models\Event;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class UpdateEventRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
+    public function rules(): array
+    {
+        $event = $this->route('event');
+        $eventType = $this->event_type ?? $event->event_type;
+
+        $rules = [
+            'project_id' => 'required|exists:projects,id',
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'type' => ['nullable', Rule::enum(EventCategory::class)],
+            'event_type' => ['required', Rule::enum(EventType::class)],
+            'created_at' => 'nullable|date|before_or_equal:today',
+        ];
+
+        // Rules specific to step events
+        if ($eventType === EventType::Step->value) {
+            $rules['status'] = ['required', Rule::in([
+                EventStatus::Todo->value,
+                EventStatus::Done->value,
+                EventStatus::Cancelled->value,
+            ])];
+            
+            $rules['execution_date'] = 'required|date|after_or_equal:created_at';
+            
+            // completed_at requise si statut = "done"
+            if ($this->status === EventStatus::Done->value) {
+                $rules['completed_at'] = 'required|date|after_or_equal:created_at';
+            } else {
+                $rules['completed_at'] = 'nullable|date|after_or_equal:created_at';
+            }
+        }
+
+        // Rules specific to billing events
+        if ($eventType === EventType::Billing->value) {
+            $rules['status'] = ['required', Rule::in([
+                EventStatus::ToSend->value,
+                EventStatus::Sent->value,
+                EventStatus::Cancelled->value,
+            ])];
+            $rules['amount'] = 'required|numeric|min:0|max:9999999.99';
+            $rules['payment_status'] = ['nullable', Rule::enum(PaymentStatus::class)];
+            
+            $rules['send_date'] = 'required|date|after_or_equal:created_at';
+            $rules['payment_due_date'] = 'required|date|after_or_equal:created_at';
+            
+            // completed_at requise si statut = "sent"
+            if ($this->status === EventStatus::Sent->value) {
+                $rules['completed_at'] = 'required|date|after_or_equal:created_at';
+            } else {
+                $rules['completed_at'] = 'nullable|date|after_or_equal:created_at';
+            }
+            
+            if ($this->payment_status === PaymentStatus::Paid->value) {
+                $rules['paid_at'] = 'required|date|after_or_equal:created_at';
+            }
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Get custom error messages
+     */
+    public function messages(): array
+    {
+        return [
+            // Project
+            'project_id.required' => 'Le projet est obligatoire.',
+            'project_id.exists' => 'Le projet sélectionné n\'existe pas.',
+            
+            // Name
+            'name.required' => 'Le nom de l\'événement est obligatoire.',
+            'name.string' => 'Le nom de l\'événement doit être du texte.',
+            'name.max' => 'Le nom ne peut pas dépasser 255 caractères.',
+            
+            // Description
+            'description.string' => 'La description doit être du texte.',
+            'description.max' => 'La description ne peut pas dépasser 1000 caractères.',
+            
+            // Type (EventCategory)
+            'type.enum' => 'Le type sélectionné n\'est pas valide.',
+            'type' => 'Le type sélectionné n\'est pas valide.',
+            
+            // Event type (EventType)
+            'event_type.required' => 'Le type d\'événement est obligatoire.',
+            'event_type.enum' => 'Le type d\'événement n\'est pas valide.',
+            'event_type' => 'Le type d\'événement n\'est pas valide.',
+            
+            // Status
+            'status.required' => 'Le statut est obligatoire.',
+            'status.in' => 'Le statut sélectionné n\'est pas valide pour ce type d\'événement.',
+            
+            // Amount (billing events)
+            'amount.required' => 'Le montant est obligatoire pour une facturation.',
+            'amount.numeric' => 'Le montant doit être un nombre.',
+            'amount.min' => 'Le montant ne peut pas être négatif.',
+            'amount.max' => 'Le montant ne peut pas dépasser 9 999 999,99 €.',
+            
+            // Payment status
+            'payment_status.enum' => 'Le statut de paiement sélectionné n\'est pas valide.',
+            'payment_status' => 'Le statut de paiement sélectionné n\'est pas valide.',
+            
+            // Dates
+            'created_at.date' => 'La date de création doit être une date valide.',
+            'created_at.before_or_equal' => 'La date de création ne peut pas être dans le futur.',
+            
+            'execution_date.required' => 'La date d\'exécution est obligatoire.',
+            'execution_date.date' => 'La date d\'exécution doit être une date valide.',
+            'execution_date.after_or_equal' => 'La date d\'exécution doit être postérieure ou égale à la date de création.',
+            
+            'completed_at.required' => 'La date d\'achèvement est obligatoire quand le statut est "Fait" ou "Envoyé".',
+            'completed_at.date' => 'La date d\'achèvement doit être une date valide.',
+            'completed_at.after_or_equal' => 'La date d\'achèvement doit être postérieure ou égale à la date de création.',
+            
+            'send_date.required' => 'La date d\'envoi est obligatoire.',
+            'send_date.date' => 'La date d\'envoi doit être une date valide.',
+            'send_date.after_or_equal' => 'La date d\'envoi doit être postérieure ou égale à la date de création.',
+            
+            'payment_due_date.required' => 'La date d\'échéance est obligatoire pour une facturation.',
+            'payment_due_date.date' => 'La date d\'échéance doit être une date valide.',
+            'payment_due_date.after_or_equal' => 'La date d\'échéance doit être postérieure ou égale à la date d\'envoi.',
+            
+            'paid_at.required' => 'La date de paiement est obligatoire quand le statut est "Payé".',
+            'paid_at.date' => 'La date de paiement doit être une date valide.',
+            'paid_at.after_or_equal' => 'La date de paiement doit être postérieure ou égale à la date de création.',
+        ];
+    }
+
+    /**
+     * Configure the validator instance
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            if (!$validator->errors()->any()) {
+                $this->validateEventTypeChange($validator);
+                $this->validateProjectDates($validator);
+                $this->validatePaymentStatus($validator);
+            }
+        });
+    }
+
+    /**
+     * Validate event type cannot be changed
+     */
+    private function validateEventTypeChange($validator): void
+    {
+        $event = $this->route('event');
+        if ($event && $this->event_type && $this->event_type !== $event->event_type) {
+            $validator->errors()->add('event_type',
+                'Le type d\'événement ne peut pas être modifié.');
+        }
+    }
+
+    /**
+     * Validate dates against project dates
+     */
+    private function validateProjectDates($validator): void
+    {
+        $project = Project::find($this->project_id);
+        if (!$project) {
+            return;
+        }
+
+        // Check if dates are within project bounds
+        if ($project->start_date) {
+            $dates = ['created_at', 'execution_date', 'send_date', 'payment_due_date', 'paid_at'];
+
+            foreach ($dates as $dateField) {
+                if ($this->has($dateField) && $this->$dateField) {
+                    $date = \Carbon\Carbon::parse($this->$dateField);
+                    if ($date->lt($project->start_date)) {
+                        $validator->errors()->add($dateField,
+                            'La date doit être après la date de début du projet (' .
+                            $project->start_date->format('d/m/Y') . ').');
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Validate payment status requirements
+     */
+    private function validatePaymentStatus($validator): void
+    {
+        $event = $this->route('event');
+        $eventType = $this->event_type ?? $event->event_type;
+
+        if ($eventType === EventType::Billing->value) {
+            // If payment_status is 'paid', paid_at is required
+            if ($this->payment_status === PaymentStatus::Paid->value) {
+                $paidAt = $this->paid_at ?? $event->paid_at;
+                if (!$paidAt) {
+                    $validator->errors()->add('paid_at',
+                        'La date de paiement est requise quand le statut de paiement est "Payé".');
+                }
+            }
+        }
+    }
+
+    /**
+     * Prepare the data for validation
+     */
+    protected function prepareForValidation(): void
+    {
+        // Trim whitespace from strings
+        $this->merge([
+            'name' => $this->name ? trim($this->name) : null,
+            'description' => $this->description ? trim($this->description) : null,
+        ]);
+
+        // Convert amount to float if provided
+        if ($this->has('amount') && $this->amount !== null && $this->amount !== '') {
+            $this->merge([
+                'amount' => floatval(str_replace(',', '.', $this->amount)),
+            ]);
+        }
+    }
+}

@@ -1,0 +1,1 @@
+export { useClientDetailManager } from './useClientDetailManager'
