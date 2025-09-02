@@ -168,14 +168,13 @@ export function useEventFilters(initialFilters: EventFilters = {}) {
     }
 
     const clearFilter = (key: keyof EventFilters): void => {
-        let clearedValue: any
-        if (key === 'search') {
-            clearedValue = ''
-        } else if (['event_type', 'status', 'project_id', 'client_id', 'payment_status'].includes(key)) {
-            clearedValue = 'all'
-        } else {
-            clearedValue = undefined
-        }
+        const clearedValue = key === 'search' ? '' : 
+                           key === 'event_type' ? 'all' :
+                           key === 'status' ? 'all' :
+                           key === 'client_id' ? 'all' :
+                           key === 'project_id' ? 'all' :
+                           key === 'payment_status' ? 'all' :
+                           undefined
         updateFilters({ [key]: clearedValue })
     }
 
@@ -184,8 +183,8 @@ export function useEventFilters(initialFilters: EventFilters = {}) {
             search: '',
             event_type: 'all',
             status: 'all',
-            project_id: 'all',
             client_id: 'all',
+            project_id: 'all',
             payment_status: 'all',
             overdue: undefined,
             payment_overdue: undefined
@@ -203,7 +202,7 @@ export function useEventFilters(initialFilters: EventFilters = {}) {
         // État
         filters,
 
-        // Computeds - Export direct
+        // Computeds
         activeFilters,
         hasActiveFilters,
         activeFiltersCount,

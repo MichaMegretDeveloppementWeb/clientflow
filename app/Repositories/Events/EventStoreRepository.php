@@ -13,12 +13,6 @@ class EventStoreRepository implements EventStoreRepositoryInterface
      */
     public function create(array $data): Event
     {
-        // Convertir les dates string en Carbon pour la base de données
-        if (isset($data['created_at'])) {
-            $data['created_date'] = $data['created_at'];
-            unset($data['created_at']);
-        }
-
         return Event::create($data);
     }
 

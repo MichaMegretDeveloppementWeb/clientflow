@@ -75,7 +75,7 @@ class DashboardActivitiesService
             ->whereHas('project.client', function ($query) use ($userId) {
                 $query->where('user_id', $userId);
             })
-            ->orderBy('created_at', 'desc')
+            ->orderBy('created_date', 'desc')
             ->limit(10)
             ->get();
 
@@ -87,7 +87,7 @@ class DashboardActivitiesService
                 'name' => $event->name,
                 'company' => null,
                 'status' => 'created',
-                'timestamp' => $event->created_at,
+                'timestamp' => $event->created_date,
                 'link' => '/events/' . $event->id,
                 'parent_project' => [
                     'id' => $event->project->id,
@@ -187,24 +187,24 @@ class DashboardActivitiesService
                 if (is_string($timestamp)) {
                     $timestamp = \Carbon\Carbon::parse($timestamp);
                 }
-                
+
                 // Ne garder que les activités dans le passé ou maintenant
                 return $timestamp instanceof \Carbon\Carbon && $timestamp->isPast() || $timestamp->isCurrentSecond();
             })
             ->sortByDesc(function ($activity) {
                 // Normaliser le timestamp en objet Carbon
                 $timestamp = $activity['timestamp'];
-                
+
                 // Si c'est une string, parser en Carbon
                 if (is_string($timestamp)) {
                     $timestamp = \Carbon\Carbon::parse($timestamp);
                 }
-                
+
                 // Si c'est déjà un Carbon, on l'utilise tel quel
                 if ($timestamp instanceof \Carbon\Carbon) {
                     return $timestamp->getTimestamp(); // Timestamp Unix pour tri numérique
                 }
-                
+
                 // Fallback : essayer de créer un Carbon
                 return \Carbon\Carbon::parse($timestamp)->getTimestamp();
             })

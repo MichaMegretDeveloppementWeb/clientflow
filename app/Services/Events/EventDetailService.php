@@ -31,7 +31,7 @@ class EventDetailService
                 'payment_due_date' => null,
                 'completed_at' => null,
                 'paid_at' => null,
-                'created_at' => null,
+                'created_date' => null,
                 'updated_at' => null,
                 'status_label' => '',
                 'event_type_label' => '',

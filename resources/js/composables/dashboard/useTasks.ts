@@ -9,6 +9,8 @@ export function useTasks() {
   const isLoading = ref(true)
   const error = ref<string | null>(null)
   const urgentOnly = ref(false)
+  const currentPage = ref(1)
+  const itemsPerPage = 5
 
   // Computed
   const taskCount = computed(() => tasks.value.length)
@@ -16,6 +18,16 @@ export function useTasks() {
   const overdueTasksCount = computed(() =>
     tasks.value.filter(task => task.is_overdue).length
   )
+  
+  // Pagination computeds
+  const totalPages = computed(() => Math.ceil(tasks.value.length / itemsPerPage))
+  const paginatedTasks = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage
+    const end = start + itemsPerPage
+    return tasks.value.slice(start, end)
+  })
+  const hasPrevPage = computed(() => currentPage.value > 1)
+  const hasNextPage = computed(() => currentPage.value < totalPages.value)
 
   // Actions
   const loadTasks = async (): Promise<void> => {
@@ -51,7 +63,21 @@ export function useTasks() {
 
   const toggleUrgentFilter = async (): Promise<void> => {
     urgentOnly.value = !urgentOnly.value
+    currentPage.value = 1 // Reset to first page when changing filter
     await loadTasks()
+  }
+
+  // Pagination actions
+  const goToPrevPage = (): void => {
+    if (hasPrevPage.value) {
+      currentPage.value--
+    }
+  }
+
+  const goToNextPage = (): void => {
+    if (hasNextPage.value) {
+      currentPage.value++
+    }
   }
 
   const markTaskCompleted = async (taskId: number): Promise<void> => {
@@ -124,11 +150,16 @@ export function useTasks() {
     isLoading,
     error,
     urgentOnly,
+    currentPage,
 
     // Computed
     taskCount,
     hasUrgentTasks,
     overdueTasksCount,
+    totalPages,
+    paginatedTasks,
+    hasPrevPage,
+    hasNextPage,
 
     // Actions
     loadTasks,
@@ -136,6 +167,8 @@ export function useTasks() {
     markTaskCompleted,
     markInvoicePaid,
     refreshTasks,
+    goToPrevPage,
+    goToNextPage,
 
     // Grouped exports for convenience
     state,

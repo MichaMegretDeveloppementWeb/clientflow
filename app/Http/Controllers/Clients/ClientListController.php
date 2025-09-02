@@ -27,11 +27,13 @@ class ClientListController extends Controller
         $skeletonData = $this->clientListService->getSkeletonData($perPage);
 
         return Inertia::render('Clients/List/Index', [
+            // Données skeleton immédiatement disponibles
             'skeletonData' => array_merge($skeletonData, [
                 'filters' => $filters,
-                'skeleton_mode' => true
             ]),
-            'data' => Inertia::optional(function () use ($filters, $perPage) {
+
+            // Données optionnelles - chargées via fetch côté client au premier rendu
+            'clientsData' => Inertia::optional(function () use ($filters, $perPage) {
                 try {
                     return $this->clientListService->getCompleteData($filters, $perPage);
                 } catch (\Exception $e) {

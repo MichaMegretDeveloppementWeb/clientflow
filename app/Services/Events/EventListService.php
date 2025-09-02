@@ -95,7 +95,8 @@ class EventListService
                 ],
                 'stats' => $stats,
                 'projects' => $this->getAvailableProjects(),
-                'clients' => $this->getAvailableClients()
+                'clients' => $this->getAvailableClients(),
+                'filters' => $filters,
             ];
 
         }catch (\Exception $e) {

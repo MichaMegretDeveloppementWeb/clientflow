@@ -84,7 +84,6 @@ export interface EventDTO {
     is_overdue: boolean;
     is_payment_overdue: boolean;
     formatted_amount?: string;
-    created_at: string;
     updated_at: string;
 }
 

@@ -41,7 +41,7 @@ export function useEventCreateForm(
         type: '',
         event_type: 'step',
         status: 'todo',
-        created_at: getCurrentDate(),
+        created_date: getCurrentDate(),
         execution_date: '',
         send_date: '',
         payment_due_date: '',
@@ -112,14 +112,14 @@ export function useEventCreateForm(
         }
     })
 
-    // Validation de created_at
+    // Validation de created_date
     const isCreatedAtValid = computed(() => {
-        if (!form.created_at || !currentProject.value?.start_date) {
+        if (!form.created_date || !currentProject.value?.start_date) {
             createdAtValidationError.value = ''
             return true
         }
 
-        const createdAt = new Date(form.created_at)
+        const createdAt = new Date(form.created_date)
         const projectStartDate = new Date(currentProject.value.start_date)
 
         if (createdAt < projectStartDate) {
@@ -151,7 +151,7 @@ export function useEventCreateForm(
     })
 
     // Watchers pour déclencher les validations en temps réel croisées
-    watch(() => form.created_at, () => {
+    watch(() => form.created_date, () => {
         validateExecutionDate()
         validateSendDate()
         validatePaymentDueDate()
@@ -171,10 +171,10 @@ export function useEventCreateForm(
 
     // Fonctions de validation individuelles
     function validateExecutionDate() {
-        if (!form.execution_date || !form.created_at) {
+        if (!form.execution_date || !form.created_date) {
             executionDateValidationError.value = ''
         } else {
-            const createdAt = new Date(form.created_at)
+            const createdAt = new Date(form.created_date)
             const executionDate = new Date(form.execution_date)
 
             if (executionDate < createdAt) {
@@ -186,10 +186,10 @@ export function useEventCreateForm(
     }
 
     function validateSendDate() {
-        if (!form.send_date || !form.created_at) {
+        if (!form.send_date || !form.created_date) {
             sendDateValidationError.value = ''
         } else {
-            const createdAt = new Date(form.created_at)
+            const createdAt = new Date(form.created_date)
             const sendDate = new Date(form.send_date)
 
             if (sendDate < createdAt) {
@@ -213,8 +213,8 @@ export function useEventCreateForm(
             let errorMessage = ''
 
             // Vérifier par rapport à la date de création
-            if (form.created_at) {
-                const createdAt = new Date(form.created_at)
+            if (form.created_date) {
+                const createdAt = new Date(form.created_date)
                 if (paymentDueDate < createdAt) {
                     errorMessage = 'L\'échéance de paiement ne peut pas être antérieure à la date de création'
                 }
@@ -239,9 +239,9 @@ export function useEventCreateForm(
         }
         if (!form.paid_at || form.event_type !== 'billing') {
             paidAtValidationError.value = ''
-        } else if (form.created_at) {
+        } else if (form.created_date) {
             const paidAtDate = new Date(form.paid_at)
-            const createdAt = new Date(form.created_at)
+            const createdAt = new Date(form.created_date)
 
             if (paidAtDate < createdAt) {
                 paidAtValidationError.value = 'La date de paiement ne peut pas être antérieure à la date de création'
@@ -267,8 +267,8 @@ export function useEventCreateForm(
             let errorMessage = ''
 
             // Vérifier par rapport à la date de création
-            if (form.created_at) {
-                const createdAt = new Date(form.created_at)
+            if (form.created_date) {
+                const createdAt = new Date(form.created_date)
                 if (completedAtDate < createdAt) {
                     const label = form.event_type === 'billing' ? 'envoi' : 'exécution'
                     errorMessage = `La date d'${label} ne peut pas être antérieure à la date de création`
@@ -322,7 +322,7 @@ export function useEventCreateForm(
 
     // Fonction pour obtenir la date minimum pour un événement
     function getMinDateForEvent(): string {
-        let minDate = new Date(form.created_at || getCurrentDate())
+        let minDate = new Date(form.created_date || getCurrentDate())
 
         if (currentProject.value?.start_date) {
             const projectStartDate = new Date(currentProject.value.start_date)

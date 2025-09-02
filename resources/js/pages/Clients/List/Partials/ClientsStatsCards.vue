@@ -112,10 +112,13 @@ const hasProjectFilters = computed(() => {
 })
 
 const hasValidStats = computed(() => {
-    // Considérer comme "pas de stats valides" si toutes les valeurs sont à 0
+    // Des stats sont valides si l'objet existe avec les propriétés attendues
+    // Même si toutes les valeurs sont à 0, ce sont des stats valides
     return props.stats && 
-           typeof props.stats.total === 'number' && 
-           (props.stats.total > 0 || props.stats.with_projects > 0 || props.stats.without_projects > 0)
+           typeof props.stats.total === 'number' &&
+           typeof props.stats.with_projects === 'number' &&
+           typeof props.stats.without_projects === 'number' &&
+           typeof props.stats.with_active_projects === 'number'
 })
 
 const handleCardClick = (card: StatsCardData) => {

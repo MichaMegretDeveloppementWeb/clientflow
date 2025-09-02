@@ -14,6 +14,7 @@
 
                 <!-- Activité récente -->
                 <RecentActivityCard />
+
             </div>
 
             <!-- Stats Grid -->
@@ -59,7 +60,7 @@
             <QuickStatsGrid />
 
             <!-- Section d'aide -->
-            <HelpGrid />
+<!--            <HelpGrid />-->
         </div>
     </AppLayout>
 </template>

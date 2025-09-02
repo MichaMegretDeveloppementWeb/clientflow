@@ -6,6 +6,8 @@ export function useActivities() {
   const activities = ref<Activity[]>([])
   const isLoading = ref(true)
   const error = ref<string | null>(null)
+  const currentPage = ref(1)
+  const itemsPerPage = 5
 
   // Computed
   const activitiesCount = computed(() => activities.value.length)
@@ -13,6 +15,16 @@ export function useActivities() {
   const urgentActivitiesCount = computed(() => 
     activities.value.filter(activity => activity.is_urgent).length
   )
+  
+  // Pagination computeds
+  const totalPages = computed(() => Math.ceil(activities.value.length / itemsPerPage))
+  const paginatedActivities = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage
+    const end = start + itemsPerPage
+    return activities.value.slice(start, end)
+  })
+  const hasPrevPage = computed(() => currentPage.value > 1)
+  const hasNextPage = computed(() => currentPage.value < totalPages.value)
 
   // Group activities by time periods
   const groupedActivities = computed((): GroupedActivities => {
@@ -82,6 +94,19 @@ export function useActivities() {
 
   const refreshActivities = async (): Promise<void> => {
     await loadActivities()
+  }
+
+  // Pagination actions
+  const goToPrevPage = (): void => {
+    if (hasPrevPage.value) {
+      currentPage.value--
+    }
+  }
+
+  const goToNextPage = (): void => {
+    if (hasNextPage.value) {
+      currentPage.value++
+    }
   }
 
   // Utility functions
@@ -161,16 +186,23 @@ export function useActivities() {
     activities,
     isLoading,
     error,
+    currentPage,
     
     // Computed
     activitiesCount,
     hasActivities,
     urgentActivitiesCount,
     groupedActivities,
+    totalPages,
+    paginatedActivities,
+    hasPrevPage,
+    hasNextPage,
     
     // Actions
     loadActivities,
     refreshActivities,
+    goToPrevPage,
+    goToNextPage,
     
     // Utilities
     formatTime,

@@ -58,9 +58,10 @@ class ProjectListService
                         'total' => $projects->total(),
                     ]
                 ],
-                'statistics' => $this->projectListRepository->getGlobalStatistics(),
+                'stats' => $this->projectListRepository->getGlobalStatistics(),
                 'clients' => $this->projectListRepository->getAvailableClients(),
                 'skeleton_mode' => false,
+                'filters' => $filters
             ];
         }catch (\Exception $e) {
             throw new \Exception("Erreurs lors du chargement des données.");

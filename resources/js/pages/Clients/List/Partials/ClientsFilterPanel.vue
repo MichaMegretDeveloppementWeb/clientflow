@@ -63,15 +63,15 @@
                                         />
                                         <Input
                                             ref="searchInput"
-                                            v-model="localFilters.search"
+                                            :model-value="props.filters?.search || ''"
                                             type="text"
                                             placeholder="Nom, email, entreprise..."
                                             class="h-10 border-gray-300 pl-10 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                                             @input="handleSearchInput"
-                                            @keydown.enter="applyFilters"
+                                            @keydown.enter="handleSearchEnter"
                                         />
                                         <Button
-                                            v-if="localFilters.search"
+                                            v-if="props.filters?.search"
                                             variant="ghost"
                                             size="sm"
                                             class="absolute right-1 top-1/2 h-7 -translate-y-1/2 transform px-2"
@@ -98,8 +98,8 @@
                                         Trier par
                                     </Label>
                                     <Select
-                                        v-model="localFilters.sort_by"
-                                        @update:model-value="handleSortChange"
+                                        :model-value="props.filters?.sort_by || 'created_at'"
+                                        @update:model-value="handleSortByChange"
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Sélectionner" />
@@ -120,8 +120,8 @@
                                         Ordre
                                     </Label>
                                     <Select
-                                        v-model="localFilters.sort_order"
-                                        @update:model-value="handleSortChange"
+                                        :model-value="props.filters?.sort_order || 'desc'"
+                                        @update:model-value="handleSortOrderChange"
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Sélectionner" />
@@ -140,10 +140,10 @@
                             <div class="flex items-center justify-center space-x-2">
                                 <input
                                     id="overdue-payments"
-                                    v-model="localFilters.has_overdue_payments"
+                                    :checked="props.filters?.has_overdue_payments === 'true'"
                                     type="checkbox"
                                     class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 focus:ring-offset-0"
-                                    @change="applyFilters"
+                                    @change="handleOverduePaymentsChange"
                                 />
                                 <Label
                                     for="overdue-payments"
@@ -229,7 +229,6 @@ const emit = defineEmits<{
 
 // État local
 const localVisible = ref(props.visible)
-const localFilters = ref<ClientFilters>({ ...props.filters })
 const searchInput = ref()
 let searchTimeout: NodeJS.Timeout | null = null
 
@@ -245,9 +244,7 @@ watch(() => props.visible, (newVal) => {
     localVisible.value = newVal
 })
 
-watch(() => props.filters, (newFilters) => {
-    localFilters.value = { ...newFilters }
-}, { deep: true })
+// Plus besoin de watcher pour localFilters car c'est maintenant un computed
 
 // Methods
 const toggleVisibility = () => {
@@ -261,24 +258,40 @@ const toggleVisibility = () => {
     }
 }
 
-const handleSearchInput = () => {
-    if (searchTimeout) clearTimeout(searchTimeout)
+const handleSearchInput = (event: Event) => {
+    const target = event.target as HTMLInputElement
+    const value = target.value
 
+    if (searchTimeout) clearTimeout(searchTimeout)
+    
     searchTimeout = setTimeout(() => {
-        applyFilters()
+        emit('update:filters', { search: value })
     }, 300)
 }
 
-const handleSortChange = () => {
-    applyFilters()
+const handleSortByChange = (value: string) => {
+    emit('update:filters', { sort_by: value })
+}
+
+const handleSortOrderChange = (value: string) => {
+    emit('update:filters', { sort_order: value })
+}
+
+const handleOverduePaymentsChange = (event: Event) => {
+    const target = event.target as HTMLInputElement
+    emit('update:filters', { has_overdue_payments: target.checked })
+}
+
+const handleSearchEnter = (event: Event) => {
+    const target = event.target as HTMLInputElement
+    const value = target.value
+    
+    // Annuler le timeout en cours et appliquer immédiatement
+    if (searchTimeout) clearTimeout(searchTimeout)
+    emit('update:filters', { search: value })
 }
 
 const clearSearch = () => {
-    localFilters.value.search = ''
-    applyFilters()
-}
-
-const applyFilters = () => {
-    emit('update:filters', { ...localFilters.value })
+    emit('update:filters', { search: '' })
 }
 </script>

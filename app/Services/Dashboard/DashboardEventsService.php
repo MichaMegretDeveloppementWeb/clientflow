@@ -12,10 +12,10 @@ class DashboardEventsService
     /**
      * Get upcoming tasks with optional urgency filter
      */
-    public function getUpcomingTasks(bool $urgentOnly = false, int $limit = 10): Collection
+    public function getUpcomingTasks(bool $urgentOnly = false, int $limit = 100): Collection
     {
         $userId = auth()->id();
-        
+
         $query = Event::with(['project.client'])
             ->whereHas('project.client', function ($query) use ($userId) {
                 $query->where('user_id', $userId);
@@ -50,8 +50,7 @@ class DashboardEventsService
                     WHEN event_type = ? THEN execution_date
                     WHEN event_type = ? THEN send_date
                 END ASC
-            ', [EventType::Step->value, EventType::Billing->value])
-            ->limit($limit);
+            ', [EventType::Step->value, EventType::Billing->value]);
 
         return $query->get();
     }

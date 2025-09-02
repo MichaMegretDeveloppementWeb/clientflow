@@ -4,7 +4,7 @@
     <AppLayout>
         <ClientsListContainer
             :skeleton-data="skeletonData"
-            :data="data"
+            :clients-data="clientsData"
             @client-deleted="handleClientDeleted"
             @filters-changed="handleFiltersChanged"
         />
@@ -26,10 +26,8 @@ import type { ClientListProps } from '@/types/clients/list'
  */
 
 interface Props {
-    skeletonData: ClientListProps & {
-        skeleton_mode?: boolean
-    }
-    data?: any
+    skeletonData: ClientListProps
+    clientsData?: any
 }
 
 const props = defineProps<Props>()

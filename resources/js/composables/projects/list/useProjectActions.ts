@@ -14,22 +14,32 @@ export function useProjectActions() {
     }
 
     const deleteProject = (
-        projectId: number, 
-        onSuccess?: () => void,
-        onError?: () => void
+        projectId: number,
+        options: { 
+            onSuccess?: () => void,
+            onError?: () => void,
+            onFinish?: () => void 
+        } = {}
     ): void => {
         if (!confirm('Êtes-vous sûr de vouloir supprimer ce projet ?')) {
+            options.onFinish?.()
             return
         }
 
         router.delete(route('projects.destroy', projectId), {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['projectsData'], // Ne recharge que les données différées, ignore la redirection
             onSuccess: () => {
                 appState.notifySuccess('Projet supprimé', 'Le projet a été supprimé avec succès')
-                onSuccess?.()
+                options.onSuccess?.()
             },
             onError: () => {
                 appState.notifyError('Erreur', 'Impossible de supprimer le projet')
-                onError?.()
+                options.onError?.()
+            },
+            onFinish: () => {
+                options.onFinish?.()
             }
         })
     }

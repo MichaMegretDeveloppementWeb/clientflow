@@ -1,7 +1,7 @@
 import { ref, computed, reactive } from 'vue'
-import type { 
-    ClientFilters, 
-    FilterState, 
+import type {
+    ClientFilters,
+    FilterState,
     ActiveFilter
 } from '@/types/clients/list/filters'
 

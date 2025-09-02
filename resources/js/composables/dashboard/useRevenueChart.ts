@@ -48,7 +48,6 @@ export function useRevenueChart() {
             }
 
             const data: RevenueChartResponse = await response.json()
-            console.log(data);
             chartData.value = data.revenue_chart
             selectedPeriod.value = period
         } catch (err) {

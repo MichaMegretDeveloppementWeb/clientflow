@@ -41,7 +41,18 @@
     </div>
 
 
-    <div v-else class="space-y-8">
+    <div v-else class="relative space-y-8">
+        <!-- Overlay de suppression en cours -->
+        <div
+            v-if="isDeletionInProgress"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+        >
+            <div class="bg-white rounded-lg p-6 shadow-lg flex items-center gap-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span class="text-gray-900 font-medium">Suppression en cours...</span>
+            </div>
+        </div>
+
         <!-- Header avec breadcrumb et actions -->
         <EventsHeader
             :has-active-filters="listManager.filters.hasActiveFilters.value"
@@ -54,7 +65,7 @@
         <EventsStatsCards
             :stats="listManager.globalState.stats"
             :current-filters="listManager.filters.filters"
-            :is-loading="skeletonLoader.showSkeleton(true, listManager.loadingStates.stats)"
+            :is-loading="listManager.isStatsLoading.value"
             @filter-selected="handleStatsFilterClick"
         />
 
@@ -75,7 +86,7 @@
         <!-- Cartes des événements -->
         <EventsCards
             :events="listManager.displayedEvents.value"
-            :is-loading="skeletonLoader.showSkeleton(true, listManager.loadingStates.events)"
+            :is-loading="listManager.isCardsLoading.value"
             :has-active-filters="listManager.filters.hasActiveFilters.value"
             @event-click="handleEventClick"
             @event-delete="handleEventDelete"
@@ -95,7 +106,7 @@
 
         <!-- État vide -->
         <EventsEmptyState
-            v-if="listManager.isEmpty.value && !skeletonLoader.showSkeleton(true, listManager.loadingStates.events)"
+            v-if="listManager.isEmpty.value"
             :has-active-filters="listManager.filters.hasActiveFilters.value"
             @clear-filters="handleClearAllFilters"
             @create-event="handleCreate"
@@ -109,8 +120,6 @@
 import { ref, onMounted, onUnmounted, provide } from 'vue'
 import { useEventListManager } from '@/composables/events/list'
 import { useEventActions } from '@/composables/events/list/useEventActions'
-import { useSkeletonLoader } from '@/composables/useSkeletonLoader'
-import { useConnectionDetection } from '@/composables/useConnectionDetection'
 import Icon from '@/components/Icon.vue'
 import { Button } from '@/components/ui/button'
 
@@ -127,9 +136,9 @@ import type { EventDTO } from '@/types/models'
 
 const props = defineProps<{
     skeletonData: EventListProps & {
-        skeleton_mode?: boolean
+        clients?: Array<{ id: number; name: string }>
     }
-    data?: any
+    eventsData?: any
 }>()
 
 const emit = defineEmits<{
@@ -137,20 +146,19 @@ const emit = defineEmits<{
     'filters-changed': [filters: any]
 }>()
 
-// État global orchestré
-const listManager = useEventListManager(props.skeletonData)
+// État global orchestré - Utiliser eventsData si disponible, sinon skeletonData
+const initialData = props.eventsData || props.skeletonData
+const listManager = useEventListManager(initialData)
 const eventActions = useEventActions()
-const connectionDetection = useConnectionDetection()
-const skeletonLoader = useSkeletonLoader(
-    props.skeletonData.skeleton_mode ?? false,
-    connectionDetection.getOptimalSkeletonDelay()
-)
 
 // États locaux UI
 const showFilters = ref(false)
+const isDeletionInProgress = ref(false)
 
 // Fournir l'état aux composants enfants
 provide('listManager', listManager)
+
+
 
 // Gestionnaires d'événements
 const handleRefresh = async () => {
@@ -194,13 +202,28 @@ const handleEventClick = (event: EventDTO) => {
 }
 
 const handleEventDelete = (eventId: number) => {
-    eventActions.deleteEvent(
-        eventId,
-        () => {
+    // Phase 1 : Loader de suppression
+    isDeletionInProgress.value = true
+
+    eventActions.deleteEvent(eventId, {
+        onSuccess: async () => {
+            // Fin phase 1
+            isDeletionInProgress.value = false
+            // Phase 2 : Skeleton pour le rechargement des données
+            listManager.setDeletionLoading(true)
+            await listManager.fetchEventsData()
             emit('event-deleted', eventId)
-            listManager.refreshEvents()
+        },
+        onFinish: () => {
+            // S'assurer que tout est nettoyé
+            isDeletionInProgress.value = false
+            listManager.setDeletionLoading(false)
+        },
+        onError: () => {
+            // Nettoyer en cas d'erreur
+            isDeletionInProgress.value = false
         }
-    )
+    })
 }
 
 const handlePageChange = async (page: number) => {
@@ -224,7 +247,7 @@ const handleKeyboardShortcuts = (e: KeyboardEvent) => {
     }
 }
 
-// Lifecycle
+// Lifecycle - Gestionnaire clavier
 onMounted(() => {
     document.addEventListener('keydown', handleKeyboardShortcuts)
 })

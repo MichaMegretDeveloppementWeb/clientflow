@@ -33,7 +33,7 @@ class StoreEventRequest extends FormRequest
             'description' => 'nullable|string|max:1000',
             'type' => ['nullable', Rule::enum(EventCategory::class)],
             'event_type' => ['required', Rule::enum(EventType::class)],
-            'created_at' => 'nullable|date|before_or_equal:today',
+            'created_date' => 'nullable|date|before_or_equal:today',
         ];
 
         // Rules specific to step events
@@ -44,13 +44,13 @@ class StoreEventRequest extends FormRequest
                 EventStatus::Cancelled->value,
             ])];
             
-            $rules['execution_date'] = 'required|date|after_or_equal:created_at';
+            $rules['execution_date'] = 'required|date|after_or_equal:created_date';
             
             // completed_at requise si statut = "done"
             if ($this->status === EventStatus::Done->value) {
-                $rules['completed_at'] = 'required|date|after_or_equal:created_at';
+                $rules['completed_at'] = 'required|date|after_or_equal:created_date';
             } else {
-                $rules['completed_at'] = 'nullable|date|after_or_equal:created_at';
+                $rules['completed_at'] = 'nullable|date|after_or_equal:created_date';
             }
         }
 
@@ -64,18 +64,18 @@ class StoreEventRequest extends FormRequest
             $rules['amount'] = 'required|numeric|min:0|max:9999999.99';
             $rules['payment_status'] = ['nullable', Rule::enum(PaymentStatus::class)];
             
-            $rules['send_date'] = 'required|date|after_or_equal:created_at';
-            $rules['payment_due_date'] = 'required|date|after_or_equal:created_at';
+            $rules['send_date'] = 'required|date|after_or_equal:created_date';
+            $rules['payment_due_date'] = 'required|date|after_or_equal:created_date';
             
             // completed_at requise si statut = "sent"
             if ($this->status === EventStatus::Sent->value) {
-                $rules['completed_at'] = 'required|date|after_or_equal:created_at';
+                $rules['completed_at'] = 'required|date|after_or_equal:created_date';
             } else {
-                $rules['completed_at'] = 'nullable|date|after_or_equal:created_at';
+                $rules['completed_at'] = 'nullable|date|after_or_equal:created_date';
             }
             
             if ($this->payment_status === PaymentStatus::Paid->value) {
-                $rules['paid_at'] = 'required|date|after_or_equal:created_at';
+                $rules['paid_at'] = 'required|date|after_or_equal:created_date';
             }
         }
 
@@ -125,8 +125,8 @@ class StoreEventRequest extends FormRequest
             'payment_status' => 'Le statut de paiement sélectionné n\'est pas valide.',
             
             // Dates
-            'created_at.date' => 'La date de création doit être une date valide.',
-            'created_at.before_or_equal' => 'La date de création ne peut pas être dans le futur.',
+            'created_date.date' => 'La date de création doit être une date valide.',
+            'created_date.before_or_equal' => 'La date de création ne peut pas être dans le futur.',
             
             'execution_date.required' => 'La date d\'exécution est obligatoire.',
             'execution_date.date' => 'La date d\'exécution doit être une date valide.',
@@ -175,7 +175,7 @@ class StoreEventRequest extends FormRequest
 
         // Check if dates are within project bounds
         if ($project->start_date) {
-            $dates = ['created_at', 'execution_date', 'send_date', 'payment_due_date', 'paid_at'];
+            $dates = ['created_date', 'execution_date', 'send_date', 'payment_due_date', 'paid_at'];
 
             foreach ($dates as $dateField) {
                 if ($this->has($dateField) && $this->$dateField) {
@@ -210,8 +210,8 @@ class StoreEventRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Set default values
-        if (!$this->has('created_at')) {
-            $this->merge(['created_at' => now()]);
+        if (!$this->has('created_date')) {
+            $this->merge(['created_date' => now()]);
         }
 
         // Set default status based on event type

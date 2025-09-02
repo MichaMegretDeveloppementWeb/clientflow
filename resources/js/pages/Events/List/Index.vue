@@ -2,7 +2,7 @@
     <Head title="Événements" />
 
     <AppLayout>
-        <EventsListContainer :skeleton-data="skeletonData" :data="data" />
+        <EventsListContainer :skeleton-data="skeletonData" :events-data="eventsData" />
     </AppLayout>
 
 </template>
@@ -15,7 +15,7 @@ import type { EventListProps } from '@/types/events/list'
 
 interface Props {
     skeletonData: EventListProps
-    data?: any
+    eventsData?: any
 }
 
 defineProps<Props>()

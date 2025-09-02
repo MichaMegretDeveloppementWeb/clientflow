@@ -86,7 +86,7 @@ class ProjectDetailService
                     'payment_due_date' => $event->payment_due_date?->toISOString(),
                     'completed_at' => $event->completed_at?->toISOString(),
                     'paid_at' => $event->paid_at?->toISOString(),
-                    'created_at' => $event->created_at->toISOString(),
+                    'created_date' => $event->created_date->toISOString(),
                     'updated_at' => $event->updated_at->toISOString(),
                 ];
             }),

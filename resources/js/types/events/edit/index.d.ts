@@ -18,7 +18,7 @@ export interface EventEditFormData {
     type: string
     event_type: 'step' | 'billing'
     status: string
-    created_at: string
+    created_date: string
     execution_date?: string
     send_date?: string
     payment_due_date?: string
@@ -38,7 +38,7 @@ export interface EventEditSkeletonData {
         type: string
         event_type: string
         status: string
-        created_at: string
+        created_date: string
         execution_date: string
         send_date: string
         payment_due_date: string

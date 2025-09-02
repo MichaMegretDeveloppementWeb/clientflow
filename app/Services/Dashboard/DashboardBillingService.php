@@ -17,14 +17,17 @@ class DashboardBillingService
     {
         $userId = auth()->id();
 
+        $totalSend = $this->getTotalSent($userId);
+        $totalPaid = $this->getTotalPaid($userId);
+
         return [
             'total_billed' => $this->getTotalBilled($userId),
             'total_to_send' => $this->getTotalToSend($userId),
-            'total_sent' => $this->getTotalSent($userId),
-            'total_paid' => $this->getTotalPaid($userId),
+            'total_sent' => $totalSend,
+            'total_paid' => $totalPaid,
             'total_overdue_payment' => $this->getTotalOverduePayment($userId),
             'total_upcoming_payment' => $this->getTotalUpcomingPayment($userId),
-            'payment_rate' => $this->getPaymentRate($userId),
+            'payment_rate' => $this->getPaymentRate($totalSend, $totalPaid),
             'invoices_to_send_count' => $this->getInvoicesToSendCount($userId),
             'unpaid_invoices_count' => $this->getUnpaidInvoicesCount($userId),
             'overdue_invoices_count' => $this->getOverdueInvoicesCount($userId),
@@ -120,17 +123,14 @@ class DashboardBillingService
     /**
      * Calculate payment rate (paid / billed)
      */
-    private function getPaymentRate(int $userId): float
+    private function getPaymentRate($totalSend, $totalPaid): float
     {
-        $totalBilled = $this->getTotalBilled($userId);
 
-        if ($totalBilled == 0) {
+        if ($totalSend == 0) {
             return 0;
         }
 
-        $totalPaid = $this->getTotalPaid($userId);
-
-        return round(($totalPaid / $totalBilled) * 100, 1);
+        return round(($totalPaid / $totalSend) * 100, 1);
     }
 
     /**

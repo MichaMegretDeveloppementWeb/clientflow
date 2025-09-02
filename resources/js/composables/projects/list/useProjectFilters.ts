@@ -11,7 +11,7 @@ export function useProjectFilters(
 ) {
     const debounceTimeout = ref<NodeJS.Timeout | null>(null)
 
-    // État réactif simplifié
+    // État réactif initialisé avec les props (lecture seule après initialisation)
     const filters = reactive<FilterState>({
         search: initialFilters.search || '',
         status: initialFilters.status || 'all',
@@ -124,14 +124,10 @@ export function useProjectFilters(
     }
 
     const clearFilter = (key: keyof ProjectFilters): void => {
-        let clearedValue: any
-        if (key === 'search') {
-            clearedValue = ''
-        } else if (key === 'status' || key === 'client_id') {
-            clearedValue = 'all'
-        } else {
-            clearedValue = undefined
-        }
+        const clearedValue = key === 'search' ? '' : 
+                           key === 'status' ? 'all' :
+                           key === 'client_id' ? 'all' :
+                           undefined
         updateFilters({ [key]: clearedValue })
     }
 
@@ -156,7 +152,7 @@ export function useProjectFilters(
         // État
         filters,
 
-        // Computeds - Export direct
+        // Computeds
         activeFilters,
         hasActiveFilters,
         activeFiltersCount,

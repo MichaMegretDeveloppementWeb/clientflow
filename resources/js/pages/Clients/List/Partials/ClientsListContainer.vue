@@ -1,5 +1,15 @@
 <template>
-    <div class="space-y-8">
+    <div class="relative space-y-8">
+        <!-- Overlay de suppression en cours -->
+        <div
+            v-if="isDeletionInProgress"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+        >
+            <div class="bg-white rounded-lg p-6 shadow-lg flex items-center gap-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span class="text-gray-900 font-medium">Suppression en cours...</span>
+            </div>
+        </div>
         <!-- Header avec breadcrumb et actions -->
         <ClientsHeader
             :has-active-filters="listManager.filters.hasActiveFilters.value"
@@ -12,7 +22,7 @@
         <ClientsStatsCards
             :stats="listManager.globalState.stats"
             :current-filters="listManager.filters.filters"
-            :is-loading="skeletonLoader.showSkeleton(true, listManager.loadingStates.stats)"
+            :is-loading="listManager.isStatsLoading.value"
             @filter-selected="handleStatsFilterClick"
         />
 
@@ -31,7 +41,7 @@
         <!-- Cartes des clients -->
         <ClientsCards
             :clients="listManager.displayedClients.value"
-            :is-loading="skeletonLoader.showSkeleton(true, listManager.loadingStates.clients)"
+            :is-loading="listManager.isCardsLoading.value"
             :has-active-filters="listManager.filters.hasActiveFilters.value"
             @client-click="handleClientClick"
             @client-delete="handleClientDelete"
@@ -51,7 +61,7 @@
 
         <!-- État vide -->
         <ClientsEmptyState
-            v-if="listManager.isEmpty.value && !listManager.isAnyLoading.value"
+            v-if="listManager.isEmpty.value"
             :has-active-filters="listManager.filters.hasActiveFilters.value"
             @clear-filters="handleClearAllFilters"
             @create-client="handleCreate"
@@ -86,11 +96,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, provide } from 'vue'
+import { ref, provide, toRef } from 'vue'
 import { useClientListManager } from '@/composables/clients/list'
 import { useClientActions } from '@/composables/clients/list/useClientActions'
-import { useSkeletonLoader } from '@/composables/useSkeletonLoader'
-import { useConnectionDetection } from '@/composables/useConnectionDetection'
 import Icon from '@/components/Icon.vue'
 import { Button } from '@/components/ui/button'
 
@@ -114,10 +122,8 @@ import type { ClientDTO } from '@/types/models'
  */
 
 const props = defineProps<{
-    skeletonData: ClientListProps & {
-        skeleton_mode?: boolean
-    }
-    data?: any
+    skeletonData: ClientListProps
+    clientsData?: any
 }>()
 
 const emit = defineEmits<{
@@ -125,17 +131,15 @@ const emit = defineEmits<{
     'filters-changed': [filters: any]
 }>()
 
-// État global orchestré
-const listManager = useClientListManager(props.skeletonData)
+
+// État global orchestré - Utiliser clientsData si disponible, sinon skeletonData
+const initialData = props.clientsData || props.skeletonData
+const listManager = useClientListManager(initialData)
 const clientActions = useClientActions()
-const connectionDetection = useConnectionDetection()
-const skeletonLoader = useSkeletonLoader(
-    props.skeletonData.skeleton_mode ?? false,
-    connectionDetection.getOptimalSkeletonDelay(),
-)
 
 // États locaux UI
 const showFilters = ref(false)
+const isDeletionInProgress = ref(false)
 
 // Fournir l'état aux composants enfants
 provide('listManager', listManager)
@@ -156,22 +160,16 @@ const handleStatsFilterClick = async (filterKey: string, filterValue: any) => {
     if (filterKey === 'clear_project_filters') {
         filters = {
             has_projects: undefined,
-            has_active_projects: undefined
+            has_active_projects: undefined,
+            has_overdue_payments: undefined
         }
     } else {
-        // Pour les filtres mutuellement exclusifs, on efface les autres
-        if (filterKey === 'has_projects') {
-            filters = {
-                has_projects: filterValue,
-                has_active_projects: undefined // Effacer le filtre projets actifs
-            }
-        } else if (filterKey === 'has_active_projects') {
-            filters = {
-                has_projects: undefined, // Effacer le filtre has_projects
-                has_active_projects: filterValue
-            }
-        } else {
-            filters = { [filterKey]: filterValue }
+        // Chaque filtre de stats efface tous les autres filtres de stats
+        filters = {
+            has_projects: undefined,
+            has_active_projects: undefined,
+            has_overdue_payments: undefined,
+            [filterKey]: filterValue // Appliquer uniquement le filtre sélectionné
         }
     }
 
@@ -201,13 +199,28 @@ const handleClientClick = (client: ClientDTO) => {
 }
 
 const handleClientDelete = (clientId: number) => {
-    clientActions.deleteClient(
-        clientId,
-        () => {
+    // Phase 1 : Loader de suppression
+    isDeletionInProgress.value = true
+
+    clientActions.deleteClient(clientId, {
+        onSuccess: async () => {
+            // Fin phase 1
+            isDeletionInProgress.value = false
+            // Phase 2 : Skeleton pour le rechargement des données
+            listManager.setDeletionLoading(true)
+            await listManager.fetchClientsData()
             emit('client-deleted', clientId)
-            listManager.refreshClients()
+        },
+        onFinish: () => {
+            // S'assurer que tout est nettoyé
+            isDeletionInProgress.value = false
+            listManager.setDeletionLoading(false)
+        },
+        onError: () => {
+            // Nettoyer en cas d'erreur
+            isDeletionInProgress.value = false
         }
-    )
+    })
 }
 
 const handlePageChange = async (page: number) => {
@@ -223,23 +236,4 @@ const handleRetry = async () => {
     await listManager.refreshClients()
 }
 
-// Raccourcis clavier
-const handleKeyboardShortcuts = (e: KeyboardEvent) => {
-    // Ctrl/Cmd + F pour focus sur recherche
-    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-        e.preventDefault()
-        showFilters.value = true
-        // Focus sera géré par le composant ClientsFilterPanel
-    }
-}
-
-// Lifecycle
-onMounted(() => {
-    document.addEventListener('keydown', handleKeyboardShortcuts)
-})
-
-onUnmounted(() => {
-    document.removeEventListener('keydown', handleKeyboardShortcuts)
-    listManager.cleanup()
-})
 </script>

@@ -38,7 +38,7 @@ class EventStoreService
     private function preprocessEventData(array $data): array
     {
         // Définir les valeurs par défaut
-        $data['created_at'] = $data['created_at'] ?? now()->format('Y-m-d');
+        $data['created_date'] = $data['created_date'] ?? now()->format('Y-m-d');
         
         // Définir le statut par défaut selon le type d'événement
         if (!isset($data['status'])) {
@@ -81,11 +81,11 @@ class EventStoreService
      */
     private function validateEventDates(array $data): void
     {
-        if (!isset($data['created_at'])) {
+        if (!isset($data['created_date'])) {
             return;
         }
 
-        $createdAt = \Carbon\Carbon::parse($data['created_at']);
+        $createdAt = \Carbon\Carbon::parse($data['created_date']);
 
         // Vérifier la date d'exécution pour les étapes
         if ($data['event_type'] === 'step' && isset($data['execution_date'])) {

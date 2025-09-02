@@ -106,9 +106,13 @@ const statsCards = computed((): StatsCardData[] => [
 ])
 
 const hasValidStats = computed(() => {
-    return props.stats &&
+    // Des stats sont valides si l'objet existe avec les propriétés attendues
+    // Même si toutes les valeurs sont à 0, ce sont des stats valides
+    return props.stats && 
            typeof props.stats.total === 'number' &&
-           (props.stats.total > 0 || props.stats.todo > 0 || props.stats.done > 0)
+           typeof props.stats.todo === 'number' &&
+           typeof props.stats.done === 'number' &&
+           typeof props.stats.overdue === 'number'
 })
 
 const hasStatusFilter = computed(() => {

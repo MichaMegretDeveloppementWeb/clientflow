@@ -1,4 +1,4 @@
-import { computed, reactive, onMounted, onUnmounted, ref } from 'vue'
+import { computed, reactive, ref, onMounted, onUnmounted } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import { useEventFilters } from './useEventFilters'
 import { useEventPagination } from './useEventPagination'
@@ -13,14 +13,14 @@ import type { EventFilters } from '@/types/events/list/filters'
 export function useEventListManager(initialProps: EventListProps) {
 
     // Sous-composables spécialisés
-    const filters = useEventFilters(initialProps.filters)
-    const pagination = useEventPagination(initialProps.events.meta)
+    const filters = useEventFilters(initialProps.filters || {})
+    const pagination = useEventPagination(initialProps.events?.meta || { current_page: 1, per_page: 15, total: 0, last_page: 1 })
     const appState = useAppState()
 
     // État global
     const globalState = reactive<EventListState>({
-        events: initialProps.events.data,
-        stats: initialProps.stats,
+        events: initialProps.events?.data || [],
+        stats: initialProps.stats || {},
         filters: filters.filters,
         pagination: pagination.paginationState,
         isLoading: false,
@@ -38,8 +38,13 @@ export function useEventListManager(initialProps: EventListProps) {
         filters: false,
         search: false,
         sort: false,
-        pagination: false
+        pagination: false,
+        deletion: false
     })
+
+    // Flag pour savoir si les stats ont été chargées au moins une fois
+    const hasStatsLoadedOnce = ref(false)
+
 
     // Fonction utilitaire pour construire les paramètres de requête
     const buildQueryParams = (filtersState: typeof filters.filters, paginationState?: any) => {
@@ -101,6 +106,78 @@ export function useEventListManager(initialProps: EventListProps) {
         return params
     }
 
+    // Méthode de chargement initial via fetch (comme le dashboard)
+    const loadInitialData = async (force: boolean = false): Promise<void> => {
+        // Charger seulement si pas déjà de données (éviter double chargement)
+        if (!force && globalState.events.length > 0 && Object.keys(globalState.stats).length > 0) {
+            return
+        }
+
+        loadingStates.events = true
+        loadingStates.stats = true
+        globalState.isLoading = true
+        globalState.error = null
+
+        try {
+            const params = buildQueryParams(filters.filters, pagination.paginationState)
+            const queryString = new URLSearchParams()
+
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined) {
+                    queryString.append(key, String(value))
+                }
+            })
+
+            const url = route('events.index') + (queryString.toString() ? '?' + queryString.toString() : '')
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-Inertia': 'true',
+                    'X-Inertia-Partial-Component': 'Events/List/Index',
+                    'X-Inertia-Partial-Data': 'eventsData',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            })
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`)
+            }
+
+            const data = await response.json()
+
+            if (data.props?.eventsData) {
+                const eventsData = data.props.eventsData
+
+                globalState.events = eventsData.events?.data || []
+                globalState.stats = eventsData.stats || {}
+
+                if (eventsData.events?.meta) {
+                    pagination.updateMeta(eventsData.events.meta)
+                }
+
+                if (eventsData.projects) {
+                    availableProjects.value = eventsData.projects
+                }
+                if (eventsData.clients) {
+                    availableClients.value = eventsData.clients
+                }
+
+                hasStatsLoadedOnce.value = true
+            }
+        } catch (error) {
+            globalState.error = error instanceof Error ? error.message : 'Une erreur est survenue lors du chargement des données'
+            console.error('Erreur lors du chargement initial:', error)
+        } finally {
+            globalState.isLoading = false
+            loadingStates.events = false
+            loadingStates.stats = false
+        }
+    }
+
     // Computeds
     const isAnyLoading = computed(() =>
         Object.values(loadingStates).some(loading => loading) || globalState.isLoading
@@ -127,7 +204,20 @@ export function useEventListManager(initialProps: EventListProps) {
         return globalState.events
     })
 
+    // Computed pour le skeleton des cartes (indépendant des stats)
+    const isCardsLoading = computed(() =>
+        loadingStates.deletion ||
+        loadingStates.events ||
+        globalState.isLoading
+    )
+
+    const isStatsLoading = computed(() =>
+        loadingStates.deletion ||
+        loadingStates.stats
+    )
+
     // Méthode centralisée pour charger les données événements
+    // Méthode pour les navigations réelles (filtres, pagination)
     const fetchEventsData = async (options: {
         showLoading?: boolean
         resetPagination?: boolean
@@ -144,20 +234,25 @@ export function useEventListManager(initialProps: EventListProps) {
             resetPagination ? null : pagination.paginationState
         )
 
-        router.reload({
-            only: ['data'],
-            data: params,
+        // Navigation complète pour mettre à jour l'URL dans l'historique
+        router.get(route('events.index'), params, {
+            only: ['eventsData'],
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
             onStart: () => {
                 globalState.isLoading = true
                 loadingStates.events = true
             },
             onFinish: () => {
-                const pageData = usePage().props.data as any
+                const pageData = usePage().props.eventsData as any
 
                 if (pageData && pageData.events && pageData.stats) {
                     // Mise à jour centralisée de l'état
                     globalState.events = pageData.events.data || []
                     globalState.stats = pageData.stats
+                    hasStatsLoadedOnce.value = true
+
                     pagination.updateMeta(pageData.events.meta)
                     globalState.error = null
 
@@ -197,23 +292,20 @@ export function useEventListManager(initialProps: EventListProps) {
     const applyFilters = async (newFilters: Partial<EventFilters>): Promise<void> => {
         // Déléguer la modification d'état au composable dédié
         filters.updateFilters(newFilters)
-
         // Recharger les données (URL mise à jour automatiquement)
         await fetchEventsData({ resetPagination: true })
     }
 
     const clearFilters = async (): Promise<void> => {
-        // Déléguer la remise à zéro au composable dédié
+        // Effacer tous les filtres via le composable dédié
         filters.clearAllFilters()
-
         // Recharger les données (URL mise à jour automatiquement)
         await fetchEventsData({ resetPagination: true })
     }
 
     const clearFilter = async (key: keyof EventFilters): Promise<void> => {
-        // Déléguer l'effacement au composable dédié
+        // Supprimer le filtre spécifique via le composable dédié
         filters.clearFilter(key)
-
         // Recharger les données (URL mise à jour automatiquement)
         await fetchEventsData({ resetPagination: true })
     }
@@ -239,6 +331,11 @@ export function useEventListManager(initialProps: EventListProps) {
         globalState.error = null
     }
 
+    // Fonctions pour gérer l'état de suppression
+    const setDeletionLoading = (isLoading: boolean): void => {
+        loadingStates.deletion = isLoading
+    }
+
     // API complète des actions
     const actions: EventListActions = {
         refreshEvents,
@@ -255,9 +352,9 @@ export function useEventListManager(initialProps: EventListProps) {
         // Autres nettoyages si nécessaire
     }
 
-    // Lifecycle
+    // Lifecycle - Charger les données au premier rendu seulement si pas de données dans les props
     onMounted(() => {
-        fetchEventsData()
+        loadInitialData(true)
     })
 
     onUnmounted(() => {
@@ -270,6 +367,7 @@ export function useEventListManager(initialProps: EventListProps) {
         loadingStates,
         availableProjects,
         availableClients,
+        hasStatsLoadedOnce,
 
         // Sous-états spécialisés
         filters,
@@ -282,11 +380,16 @@ export function useEventListManager(initialProps: EventListProps) {
         hasError,
         hasResults,
         displayedEvents,
+        isCardsLoading,
+        isStatsLoading,
 
         // Actions principales
         ...actions,
         loadRealData,
+        loadInitialData,
+        fetchEventsData,
         clearError,
+        setDeletionLoading,
 
         // Nettoyage
         cleanup

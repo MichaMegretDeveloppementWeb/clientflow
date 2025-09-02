@@ -54,7 +54,7 @@
                             <span class="text-sm font-medium text-gray-600">Dernière modification</span>
                         </div>
                         <span class="text-sm font-medium text-gray-800">
-                            {{ formatDateTime(event.updated_at) }}
+                            {{ formatDate(event.updated_at) }}
                         </span>
                     </div>
                 </div>
@@ -91,7 +91,7 @@ const props = defineProps({
     }
 })
 
-const { formatDateTime } = useEventUtils(toRef(props, 'event'))
+const { formatDate } = useEventUtils(toRef(props, 'event'))
 
 // Afficher la carte si il y a des détails à afficher ou en mode skeleton
 const shouldShowDetailsCard = computed(() => {

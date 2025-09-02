@@ -12,6 +12,6 @@ export interface Event {
     payment_due_date?: string
     completed_at?: string
     paid_at?: string
-    created_at: string
+    created_date: string
     updated_at: string
 }

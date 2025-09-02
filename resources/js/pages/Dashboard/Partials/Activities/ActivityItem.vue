@@ -1,7 +1,10 @@
 <template>
     <Link
         :href="activity.link"
-        class="group flex items-start gap-3 rounded-xl border p-4 transition-all duration-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm border-gray-200 bg-white"
+        :class="[
+            'group flex items-start gap-3 p-0 py-6',
+            props.customClass || 'rounded-lg bg-gray-200 hover:bg-gray-300 hover:shadow-sm'
+        ]"
     >
         <!-- Icône de type -->
         <div class="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-xl ring-1 ring-inset" :class="getIconBgClasses()">
@@ -16,26 +19,26 @@
         <!-- Contenu principal -->
         <div class="min-w-0 flex-1">
             <!-- Titre et badge -->
-            <div class="mb-2 flex flex-col gap-2">
+            <div class="mb-2 flex flex-col md:flex-row md:items-center gap-3">
                 <h4 class="break-words font-medium leading-tight text-gray-900">
-                    {{ activity.entity_type }} {{ activity.name }}
+                    {{ activity.entity_type }} - {{ activity.name }}
                     <span v-if="activity.company" class="text-sm text-gray-500">({{ activity.company }})</span>
                 </h4>
-                
+
                 <!-- Badge de statut -->
-                <div class="inline-flex w-fit items-center gap-1 rounded-full px-2 py-1 text-xs font-medium" :class="getStatusBadgeClasses()">
-                    <OptimizedIcon :name="getStatusIcon()" :size="12" />
+                <div class="inline-flex w-fit items-center gap-1 rounded-sm px-1 py-0 text-md font-medium" :class="getStatusBadgeClasses()">
+                    <OptimizedIcon :name="getStatusIcon()" :size="15" />
                     {{ activity.status_label }}
                 </div>
             </div>
 
             <!-- Informations parent (projet/client) et montant -->
-            <div class="mb-4 mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div class="mb-2 mt-4 md:mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <!-- Informations parent -->
-                <div v-if="getParentInfo()" class="break-words text-sm text-gray-600">
+                <div v-if="getParentInfo()" class="break-words text-sm text-gray-600 hidden md:block">
                     {{ getParentInfo() }}
                 </div>
-                
+
                 <!-- Montant si facturation -->
                 <div
                     v-if="activity.amount"
@@ -90,6 +93,7 @@ interface Activity {
 // Props
 interface Props {
     activity: Activity;
+    customClass?: string;
 }
 
 const props = defineProps<Props>();
@@ -114,15 +118,15 @@ const getIconBgClasses = (): string => {
 const getStatusBadgeClasses = (): string => {
     switch (props.activity.status) {
         case 'created':
-            return 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/20';
+            return 'text-blue-700 ring-1 ring-blue-600/20';
         case 'done':
-            return 'bg-green-50 text-green-700 ring-1 ring-green-600/20';
+            return 'text-green-700 ring-1 ring-green-600/20';
         case 'sent':
-            return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20';
+            return 'text-emerald-700 ring-1 ring-emerald-600/20';
         case 'paid':
-            return 'bg-green-50 text-green-700 ring-1 ring-green-600/20';
+            return 'text-green-700 ring-1 ring-green-600/20';
         default:
-            return 'bg-gray-50 text-gray-700 ring-1 ring-gray-600/20';
+            return 'text-gray-700 ring-1 ring-gray-600/20';
     }
 };
 
@@ -145,7 +149,7 @@ const getStatusIcon = (): string => {
 // Obtenir les informations parent à afficher
 const getParentInfo = (): string | null => {
     const { type, parent_project, parent_client } = props.activity;
-    
+
     if (type === 'client') {
         // Pour un client, pas d'info parent
         return null;

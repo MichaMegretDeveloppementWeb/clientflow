@@ -23,9 +23,6 @@
                     <div>
                         <h1 class="text-2xl font-bold tracking-tight text-gray-900">
                             Projets
-                            <span v-if="hasActiveFilters" class="ml-2 text-sm font-normal text-gray-500">
-                                (filtré)
-                            </span>
                         </h1>
                     </div>
                 </div>

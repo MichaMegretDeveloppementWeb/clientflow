@@ -81,10 +81,13 @@ export function useClientDetailManager(clientId: number, skeletonData: ClientDet
 
     // Méthode pour recharger avec filtres
     const reloadWithFilters = async (filters: Record<string, any>) => {
-        router.reload({
-            only: ['data'],
-            preserveUrl: true,
+        router.visit(route('clients.show', clientId), {
+            method: 'get',
             data: filters,
+            only: ['data'],
+            preserveState: true,
+            replace: false, // Force la création d'une nouvelle entrée historique
+            preserveScroll: true,
             onStart: () => {
                 globalState.isLoading = true
             },

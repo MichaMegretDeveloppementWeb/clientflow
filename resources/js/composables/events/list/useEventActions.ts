@@ -20,26 +20,33 @@ export function useEventActions() {
     }
 
     const deleteEvent = (
-        eventId: number, 
-        onSuccess?: () => void,
-        eventName?: string
+        eventId: number,
+        options: {
+            onSuccess?: () => void,
+            onFinish?: () => void,
+            onError?: () => void,
+            eventName?: string
+        } = {}
     ): void => {
-        const confirmMessage = eventName 
-            ? `Êtes-vous sûr de vouloir supprimer l'événement "${eventName}" ?`
+        const confirmMessage = options.eventName
+            ? `Êtes-vous sûr de vouloir supprimer l'événement "${options.eventName}" ?`
             : 'Êtes-vous sûr de vouloir supprimer cet événement ?'
 
         if (!confirm(confirmMessage)) {
+            options.onFinish?.()
             return
         }
 
         router.delete(route('events.destroy', { event: eventId }), {
+            preserveState: true,
             preserveScroll: true,
+            only: ['eventsData'], // Ne recharge que les données différées, ignore la redirection
             onSuccess: () => {
                 appState.notifySuccess(
                     'Événement supprimé',
-                    eventName ? `L'événement "${eventName}" a été supprimé avec succès.` : 'L\'événement a été supprimé avec succès.'
+                    options.eventName ? `L'événement "${options.eventName}" a été supprimé avec succès.` : 'L\'événement a été supprimé avec succès.'
                 )
-                onSuccess?.()
+                options.onSuccess?.()
             },
             onError: (errors) => {
                 console.error('Delete event error:', errors)
@@ -47,6 +54,9 @@ export function useEventActions() {
                     'Erreur',
                     'Une erreur est survenue lors de la suppression de l\'événement.'
                 )
+            },
+            onFinish: () => {
+                options.onFinish?.()
             }
         })
     }
@@ -98,7 +108,7 @@ export function useEventActions() {
     }
 
     const cancelEvent = (eventId: number, eventName?: string): void => {
-        const confirmMessage = eventName 
+        const confirmMessage = eventName
             ? `Êtes-vous sûr de vouloir annuler l'événement "${eventName}" ?`
             : 'Êtes-vous sûr de vouloir annuler cet événement ?'
 
@@ -159,12 +169,12 @@ export function useEventActions() {
 
         // Actions CRUD
         deleteEvent,
-        
+
         // Actions de statut
         markEventAsDone,
         markEventAsSent,
         cancelEvent,
-        
+
         // Actions utilitaires
         duplicateEvent
     }

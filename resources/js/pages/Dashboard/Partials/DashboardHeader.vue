@@ -83,7 +83,7 @@
                             <div class="my-2 border-t border-gray-100"></div>
 
                             <QuickActionItem
-                                :href="route('clients.index')"
+                                :href="route('clients.index', { from: 'dashboard' })"
                                 icon="user"
                                 title="Voir les clients"
                                 description="Liste des clients"
@@ -92,7 +92,7 @@
                             />
 
                             <QuickActionItem
-                                :href="route('projects.index')"
+                                :href="route('projects.index', { from: 'dashboard' })"
                                 icon="folder-kanban"
                                 title="Voir les projets"
                                 description="Gérer tous les projets"
@@ -101,7 +101,7 @@
                             />
 
                             <QuickActionItem
-                                :href="route('events.index')"
+                                :href="route('events.index', { from: 'dashboard' })"
                                 icon="calendar"
                                 title="Voir les événements"
                                 description="Consulter le planning"

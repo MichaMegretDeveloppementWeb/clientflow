@@ -15,7 +15,7 @@ export function useEventTimeline(event: MaybeRef<EventDTO | null>) {
         // 1. Création de l'événement
         items.push({
             key: 'created',
-            date: eventValue.created_at,
+            date: eventValue.created_date,
             title: 'Événement créé',
             icon: 'plus',
             bgClass: 'bg-gray-100',

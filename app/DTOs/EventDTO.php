@@ -379,7 +379,7 @@ class EventDTO
             'type' => $this->type,
             'event_type' => $this->eventType,
             'status' => $this->status,
-            'created_at' => $this->createdDate?->format('Y-m-d'),
+            'created_date' => $this->createdDate?->format('Y-m-d'),
             'execution_date' => $this->executionDate?->format('Y-m-d'),
             'send_date' => $this->sendDate?->format('Y-m-d'),
             'payment_due_date' => $this->paymentDueDate?->format('Y-m-d'),

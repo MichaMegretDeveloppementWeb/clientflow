@@ -96,6 +96,9 @@ class EventFactory extends Factory
 
     /**
      * Define the model's default state.
+     * 
+     * IMPORTANT: Cet événement sera lié à un projet existant lors du seeding,
+     * les dates doivent être cohérentes avec le projet parent.
      */
     public function definition(): array
     {
@@ -108,7 +111,7 @@ class EventFactory extends Factory
         $baseAttributes = [
             'project_id' => Project::factory(),
             'event_type' => $eventType->value,
-            'created_at' => $faker->dateTimeBetween('-1 year', 'now'),
+            'created_date' => $faker->dateTimeBetween('-1 year', 'now'),
         ];
         
         // Add type-specific attributes
@@ -117,6 +120,38 @@ class EventFactory extends Factory
         } else {
             return array_merge($baseAttributes, $this->billingEventAttributes($faker));
         }
+    }
+    
+    /**
+     * Create an event for a specific project with coherent dates
+     */
+    public function forProject(Project $project): static
+    {
+        return $this->state(function (array $attributes) use ($project) {
+            $faker = \Faker\Factory::create('fr_FR');
+            $eventType = EventType::from($attributes['event_type'] ?? EventType::Step->value);
+            
+            // Les événements ne peuvent pas être créés avant le début du projet
+            $projectStart = $project->start_date;
+            $projectEnd = $project->end_date ?? now();
+            
+            // Date de création : entre le début du projet et maintenant
+            $createdDate = $faker->dateTimeBetween(
+                max($projectStart, strtotime('-1 year')),
+                'now'
+            );
+            
+            $baseAttributes = [
+                'project_id' => $project->id,
+                'created_date' => $createdDate,
+            ];
+            
+            if ($eventType === EventType::Step) {
+                return array_merge($baseAttributes, $this->stepEventAttributesForProject($faker, $project, $createdDate));
+            } else {
+                return array_merge($baseAttributes, $this->billingEventAttributesForProject($faker, $project, $createdDate));
+            }
+        });
     }
 
     /**
@@ -130,10 +165,13 @@ class EventFactory extends Factory
         // Generate dates based on status
         $createdDate = $faker->dateTimeBetween('-6 months', 'now');
         
-        // Ensure execution date is after created date
-        $minExecutionDate = max($createdDate->getTimestamp(), strtotime('-6 months'));
-        $maxExecutionDate = strtotime('+3 months');
-        $executionDate = $faker->dateTimeBetween(date('Y-m-d H:i:s', $minExecutionDate), date('Y-m-d H:i:s', $maxExecutionDate));
+        // Ensure execution date is after created date BUT NEVER IN THE FUTURE
+        $minExecutionDate = $createdDate->getTimestamp();
+        $maxExecutionDate = strtotime('today'); // Jamais dans le futur
+        $executionDate = $faker->dateTimeBetween(
+            date('Y-m-d H:i:s', $minExecutionDate), 
+            date('Y-m-d H:i:s', $maxExecutionDate)
+        );
         
         $completedAt = null;
         
@@ -173,6 +211,59 @@ class EventFactory extends Factory
             'updated_at' => $completedAt ?? $createdDate,
         ];
     }
+    
+    /**
+     * Generate attributes for step events with project context
+     */
+    private function stepEventAttributesForProject($faker, Project $project, \DateTime $createdDate): array
+    {
+        $category = $faker->randomElement(EventCategory::forEventType(EventType::Step));
+        $status = $faker->randomElement([EventStatus::Todo, EventStatus::Done, EventStatus::Cancelled]);
+        
+        // Date d'exécution : entre la création et la fin du projet (ou maintenant)
+        $projectEnd = $project->end_date ?? now();
+        $maxExecutionDate = min($projectEnd->getTimestamp(), strtotime('today'));
+        
+        $executionDate = $faker->dateTimeBetween(
+            $createdDate,
+            date('Y-m-d H:i:s', $maxExecutionDate)
+        );
+        
+        $completedAt = null;
+        
+        if ($status === EventStatus::Done) {
+            $minCompleted = $executionDate->getTimestamp();
+            $maxCompleted = min($minCompleted + (7 * 24 * 60 * 60), time());
+            if ($minCompleted < $maxCompleted) {
+                $completedAt = $faker->dateTimeBetween(date('Y-m-d H:i:s', $minCompleted), date('Y-m-d H:i:s', $maxCompleted));
+            } else {
+                $completedAt = new \DateTime(date('Y-m-d H:i:s', $minCompleted));
+            }
+        } elseif ($status === EventStatus::Cancelled) {
+            $minCancelled = $createdDate->getTimestamp();
+            $maxCancelled = time();
+            if ($minCancelled < $maxCancelled) {
+                $completedAt = $faker->dateTimeBetween(date('Y-m-d H:i:s', $minCancelled), 'now');
+            } else {
+                $completedAt = new \DateTime();
+            }
+        }
+        
+        return [
+            'name' => $this->generateStepName($faker, $category),
+            'description' => $this->generateStepDescription($faker, $category),
+            'type' => $category->value,
+            'status' => $status->value,
+            'amount' => null,
+            'payment_status' => null,
+            'execution_date' => $executionDate,
+            'send_date' => null,
+            'payment_due_date' => null,
+            'completed_at' => $completedAt,
+            'paid_at' => null,
+            'updated_at' => $completedAt ?? $createdDate,
+        ];
+    }
 
     /**
      * Generate attributes for billing events
@@ -185,9 +276,9 @@ class EventFactory extends Factory
         // Generate dates
         $createdDate = $faker->dateTimeBetween('-6 months', 'now');
         
-        // Ensure send date is after created date
+        // Ensure send date is after created date BUT NEVER IN THE FUTURE
         $minSendDate = $createdDate->getTimestamp();
-        $maxSendDate = strtotime('+1 month');
+        $maxSendDate = strtotime('today'); // Jamais dans le futur
         $sendDate = $faker->dateTimeBetween(date('Y-m-d H:i:s', $minSendDate), date('Y-m-d H:i:s', $maxSendDate));
         
         $paymentDueDate = null;
@@ -199,7 +290,7 @@ class EventFactory extends Factory
         $amount = $this->generateAmount($faker, $category);
         
         if ($status === EventStatus::Sent) {
-            // If sent, it has payment information
+            // If sent, it MUST have payment information
             $minDueDate = $sendDate->getTimestamp();
             $maxDueDate = $minDueDate + (60 * 24 * 60 * 60); // 60 days
             $paymentDueDate = $faker->dateTimeBetween(date('Y-m-d H:i:s', $minDueDate), date('Y-m-d H:i:s', $maxDueDate));
@@ -236,6 +327,76 @@ class EventFactory extends Factory
             'amount' => $amount,
             'payment_status' => $paymentStatus?->value,
             'created_date' => $createdDate,
+            'execution_date' => null,
+            'send_date' => $sendDate,
+            'payment_due_date' => $paymentDueDate,
+            'completed_at' => $completedAt,
+            'paid_at' => $paidAt,
+            'updated_at' => $paidAt ?? $completedAt ?? $createdDate,
+        ];
+    }
+    
+    /**
+     * Generate attributes for billing events with project context
+     */
+    private function billingEventAttributesForProject($faker, Project $project, \DateTime $createdDate): array
+    {
+        $category = $faker->randomElement(EventCategory::forEventType(EventType::Billing));
+        $status = $faker->randomElement([EventStatus::ToSend, EventStatus::Sent, EventStatus::Cancelled]);
+        
+        // Date d'envoi : entre la création et la fin du projet (ou maintenant)
+        $projectEnd = $project->end_date ?? now();
+        $maxSendDate = min($projectEnd->getTimestamp(), strtotime('today'));
+        
+        $sendDate = $faker->dateTimeBetween(
+            $createdDate,
+            date('Y-m-d H:i:s', $maxSendDate)
+        );
+        
+        $paymentDueDate = null;
+        $paidAt = null;
+        $paymentStatus = null;
+        $completedAt = null;
+        
+        // Generate amount based on category
+        $amount = $this->generateAmount($faker, $category);
+        
+        if ($status === EventStatus::Sent) {
+            // If sent, it MUST have payment information
+            $minDueDate = $sendDate->getTimestamp();
+            $maxDueDate = $minDueDate + (60 * 24 * 60 * 60);
+            $paymentDueDate = $faker->dateTimeBetween(date('Y-m-d H:i:s', $minDueDate), date('Y-m-d H:i:s', $maxDueDate));
+            
+            $paymentStatus = $faker->randomElement([PaymentStatus::Pending, PaymentStatus::Paid]);
+            
+            if ($paymentStatus === PaymentStatus::Paid) {
+                $minPaidDate = $sendDate->getTimestamp();
+                $maxPaidDate = min($paymentDueDate->getTimestamp() + (30 * 24 * 60 * 60), time());
+                if ($minPaidDate < $maxPaidDate) {
+                    $paidAt = $faker->dateTimeBetween(date('Y-m-d H:i:s', $minPaidDate), date('Y-m-d H:i:s', $maxPaidDate));
+                } else {
+                    $paidAt = new \DateTime(date('Y-m-d H:i:s', $minPaidDate));
+                }
+            }
+            
+            $completedAt = $sendDate;
+        } elseif ($status === EventStatus::Cancelled) {
+            $minCancelled = $createdDate->getTimestamp();
+            $maxCancelled = time();
+            if ($minCancelled < $maxCancelled) {
+                $completedAt = $faker->dateTimeBetween(date('Y-m-d H:i:s', $minCancelled), 'now');
+            } else {
+                $completedAt = new \DateTime();
+            }
+        }
+        
+        return [
+            'name' => $this->generateBillingName($faker, $category),
+            'description' => $this->generateBillingDescription($faker, $category, $amount),
+            'type' => $category->value,
+            'status' => $status->value,
+            'amount' => $amount,
+            'payment_status' => $paymentStatus?->value,
             'execution_date' => null,
             'send_date' => $sendDate,
             'payment_due_date' => $paymentDueDate,
@@ -347,13 +508,17 @@ class EventFactory extends Factory
      */
     private function generateAmount($faker, EventCategory $category): float
     {
+        // Generate amounts based on category type, with realistic ranges
         $ranges = match($category) {
-            EventCategory::Invoice => [500, 25000],
-            EventCategory::Quote => [1000, 50000],
-            EventCategory::Deposit => [300, 10000],
-            EventCategory::Refund => [50, 5000],
-            EventCategory::CreditNote => [100, 5000],
-            default => [100, 10000],
+            EventCategory::Delivery => [2000, 25000], // Major deliverables
+            EventCategory::Execution => [1000, 15000], // Development work
+            EventCategory::Consultation => [500, 5000], // Consultation sessions
+            EventCategory::Planning => [500, 3000], // Planning phases
+            EventCategory::Training => [800, 5000], // Training sessions
+            EventCategory::Maintenance => [300, 2000], // Maintenance work
+            EventCategory::Review => [300, 1500], // Review sessions
+            EventCategory::Research => [500, 3000], // Research work
+            default => [500, 10000], // Default range
         };
         
         $amount = $faker->randomFloat(2, $ranges[0], $ranges[1]);
@@ -419,10 +584,30 @@ class EventFactory extends Factory
             $faker = \Faker\Factory::create('fr_FR');
             $eventType = EventType::from($attributes['event_type'] ?? EventType::Step->value);
             
-            return [
+            $baseAttributes = [
                 'status' => $eventType === EventType::Step ? EventStatus::Done->value : EventStatus::Sent->value,
                 'completed_at' => $faker->dateTimeBetween('-1 month', 'now'),
             ];
+            
+            // For billing events, ensure we have payment information
+            if ($eventType === EventType::Billing) {
+                $completedAt = $baseAttributes['completed_at'];
+                $sendDate = $faker->dateTimeBetween('-2 months', $completedAt);
+                
+                $minDueDate = $sendDate->getTimestamp();
+                $maxDueDate = $minDueDate + (60 * 24 * 60 * 60); // 60 days
+                
+                // Ensure payment_due_date is after send_date
+                $paymentDueDate = $faker->dateTimeBetween($sendDate, date('Y-m-d H:i:s', $maxDueDate));
+                
+                $baseAttributes = array_merge($baseAttributes, [
+                    'send_date' => $sendDate,
+                    'payment_due_date' => $paymentDueDate,
+                    'payment_status' => $faker->randomElement([PaymentStatus::Pending, PaymentStatus::Paid]),
+                ]);
+            }
+            
+            return $baseAttributes;
         });
     }
 
@@ -434,11 +619,23 @@ class EventFactory extends Factory
         return $this->state(function (array $attributes) {
             $faker = \Faker\Factory::create('fr_FR');
             
+            $paidAt = $faker->dateTimeBetween('-1 month', 'now');
+            $sendDate = $faker->dateTimeBetween('-2 months', $paidAt);
+            
+            $minDueDate = $sendDate->getTimestamp();
+            $maxDueDate = $minDueDate + (60 * 24 * 60 * 60); // 60 days
+            
+            // Ensure payment_due_date is after send_date
+            $paymentDueDate = $faker->dateTimeBetween($sendDate, date('Y-m-d H:i:s', $maxDueDate));
+            
             return [
                 'event_type' => EventType::Billing->value,
                 'status' => EventStatus::Sent->value,
                 'payment_status' => PaymentStatus::Paid->value,
-                'paid_at' => $faker->dateTimeBetween('-1 month', 'now'),
+                'send_date' => $sendDate,
+                'payment_due_date' => $paymentDueDate,
+                'paid_at' => $paidAt,
+                'completed_at' => $sendDate,
             ];
         });
     }

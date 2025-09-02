@@ -28,7 +28,8 @@
                                     :href="route('events.index', {
                                         event_type: 'billing',
                                         status: 'sent',
-                                        payment_status: 'paid'
+                                        payment_status: 'paid',
+                                        from: 'dashboard'
                                     })"
                                     class="text-left transition-colors hover:bg-emerald-50 p-1 rounded"
                                     @click.stop
@@ -44,7 +45,8 @@
                                     :href="route('events.index', {
                                         event_type: 'billing',
                                         status: 'sent',
-                                        payment_status: 'pending'
+                                        payment_status: 'pending',
+                                        from: 'dashboard'
                                     })"
                                     class="text-left transition-colors hover:bg-amber-50 p-1 rounded"
                                     @click.stop
@@ -60,7 +62,8 @@
                                     :href="route('events.index', {
                                         event_type: 'billing',
                                         status: 'sent',
-                                        payment_status: 'overdue'
+                                        payment_status: 'overdue',
+                                        from: 'dashboard'
                                     })"
                                     class="text-left transition-colors hover:bg-red-50 p-1 rounded"
                                     @click.stop

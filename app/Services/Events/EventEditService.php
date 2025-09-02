@@ -25,7 +25,7 @@ class EventEditService
                 'type' => '',
                 'event_type' => 'step',
                 'status' => 'todo',
-                'created_at' => '',
+                'created_date' => '',
                 'execution_date' => '',
                 'send_date' => '',
                 'payment_due_date' => '',

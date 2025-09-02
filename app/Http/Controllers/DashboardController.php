@@ -45,6 +45,7 @@ class DashboardController extends Controller
 
     public function urgentTasks(Request $request): JsonResponse
     {
+
         // Récupérer le paramètre pour filtrer les tâches urgentes uniquement
         $urgentOnly = $request->boolean('urgent_only', false);
 

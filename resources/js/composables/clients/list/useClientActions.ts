@@ -15,22 +15,32 @@ export function useClientActions() {
     }
 
     const deleteClient = (
-        clientId: number, 
-        onSuccess?: () => void,
-        onError?: () => void
+        clientId: number,
+        options: { 
+            onSuccess?: () => void,
+            onError?: () => void,
+            onFinish?: () => void 
+        } = {}
     ): void => {
         if (!confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) {
+            options.onFinish?.()
             return
         }
 
         router.delete(route('clients.destroy', clientId), {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['clientsData'], // Recharge automatiquement les données
             onSuccess: () => {
                 appState.notifySuccess('Client supprimé', 'Le client a été supprimé avec succès')
-                onSuccess?.()
+                options.onSuccess?.()
             },
             onError: () => {
                 appState.notifyError('Erreur', 'Impossible de supprimer le client')
-                onError?.()
+                options.onError?.()
+            },
+            onFinish: () => {
+                options.onFinish?.()
             }
         })
     }

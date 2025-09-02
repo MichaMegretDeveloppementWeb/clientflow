@@ -49,7 +49,7 @@ class ClientListService
                 'without_projects' => 0,
                 'with_active_projects' => 0,
             ],
-            'filters' => []
+            // 'filters' => [] // Supprimé - les filtres sont gérés dans le contrôleur
         ];
     }
 

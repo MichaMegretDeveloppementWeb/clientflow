@@ -16,8 +16,8 @@ export function useProjectDetailTimeline(events: Ref<Event[]>) {
             const dateA = getEventDate(a)
             const dateB = getEventDate(b)
 
-            const fallbackDateA = dateA ? new Date(dateA) : new Date(a.created_at)
-            const fallbackDateB = dateB ? new Date(dateB) : new Date(b.created_at)
+            const fallbackDateA = dateA ? new Date(dateA) : new Date(a.created_date)
+            const fallbackDateB = dateB ? new Date(dateB) : new Date(b.created_date)
 
             return fallbackDateB.getTime() - fallbackDateA.getTime()
         })

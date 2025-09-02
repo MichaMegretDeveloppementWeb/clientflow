@@ -39,23 +39,6 @@
                 </div>
             </div>
 
-            <!-- Stats cards skeleton -->
-            <div class="grid gap-4 grid-cols-1 md:gap-6 xl:grid-cols-2 2xl:grid-cols-4">
-                <div v-for="i in 4" :key="i" class="animate-pulse">
-                    <div class="bg-white shadow-sm ring-1 ring-gray-200/60 rounded-lg">
-                        <div class="p-4 sm:p-6">
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="min-w-0 flex-1 space-y-3">
-                                    <div class="h-4 bg-gray-200 rounded w-20"></div>
-                                    <div class="h-6 bg-gray-200 rounded w-24"></div>
-                                </div>
-                                <div class="h-12 w-12 bg-gray-200 rounded-full"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Project info skeleton -->
             <div class="animate-pulse bg-white shadow-sm ring-1 ring-gray-200/60 rounded-lg">
                 <div class="border-b border-gray-100 px-6 py-4">
@@ -79,6 +62,23 @@
                             <div class="flex items-center gap-2">
                                 <div class="h-4 w-4 bg-gray-200 rounded"></div>
                                 <div class="h-4 bg-gray-200 rounded w-20"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats cards skeleton -->
+            <div class="grid gap-4 grid-cols-1 md:gap-6 xl:grid-cols-2 2xl:grid-cols-4">
+                <div v-for="i in 4" :key="i" class="animate-pulse">
+                    <div class="bg-white shadow-sm ring-1 ring-gray-200/60 rounded-lg">
+                        <div class="p-4 sm:p-6">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0 flex-1 space-y-3">
+                                    <div class="h-4 bg-gray-200 rounded w-20"></div>
+                                    <div class="h-6 bg-gray-200 rounded w-24"></div>
+                                </div>
+                                <div class="h-12 w-12 bg-gray-200 rounded-full"></div>
                             </div>
                         </div>
                     </div>

@@ -226,6 +226,7 @@ class DashboardRevenueService
 
         switch ($period) {
             case 'current_month':
+                $endDate = now()->endOfMonth();
                 $startDate = now()->startOfMonth();
                 $granularity = 'day';
                 break;

@@ -13,6 +13,11 @@
             :is-loading="skeletonLoader.showSkeleton(true, detailManager.isLoading.value)"
         />
 
+        <ClientDetailActions
+            v-if="!skeletonLoader.showSkeleton(true, detailManager.isLoading.value) && detailManager.globalState.client"
+            :client="detailManager.globalState.client"
+        />
+
         <ClientDetailInfo
             :client="detailManager.globalState.client"
             :is-loading="skeletonLoader.showSkeleton(true, detailManager.isLoading.value)"
@@ -34,13 +39,14 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
 import { useClientDetailManager } from '@/composables/clients/detail'
 import { useSkeletonLoader } from '@/composables/useSkeletonLoader'
 import { useConnectionDetection } from '@/composables/useConnectionDetection'
 
 // Import des sous-composants
 import ClientDetailHeader from './ClientDetailHeader.vue'
+import ClientDetailActions from './ClientDetailActions.vue'
 import ClientDetailInfo from './ClientDetailInfo.vue'
 import ClientDetailStats from './ClientDetailStats.vue'
 import ClientDetailProjects from './ClientDetailProjects.vue'
@@ -69,8 +75,6 @@ const handleRetry = async () => {
     detailManager.clearError()
     await detailManager.fetchData()
 }
-
-// Plus besoin de gérer les filtres - tout se fait côté client maintenant
 
 onMounted(() => {
     // Auto-load si pas en mode skeleton

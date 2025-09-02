@@ -32,7 +32,7 @@ class BillingResource extends JsonResource
             'cards' => [
                 [
                     'id' => 'total_billed',
-                    'title' => 'Total facturé',
+                    'title' => 'Montant total des factures',
                     'value' => round($this->resource['total_billed'], 2),
                     'icon' => 'calculator',
                     'color' => 'purple',
@@ -46,7 +46,6 @@ class BillingResource extends JsonResource
                     'icon' => 'clock',
                     'color' => 'orange',
                     'link' => route('events.index') . '?event_type=billing&status=to_send',
-                    'description' => $this->resource['invoices_to_send_count'] . ' facture(s)',
                 ],
                 [
                     'id' => 'sent_details',

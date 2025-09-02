@@ -61,7 +61,7 @@ const displayStats = computed(() => {
             value: statistics.value.clients.total.toString(),
             icon: 'users',
             color: 'blue',
-            href: route('clients.index'),
+            href: route('clients.index', { from: 'dashboard' }),
             growth: statistics.value.clients.this_month,
             growthLabel: (() => {
                 const thisMonth = statistics.value.clients.this_month
@@ -79,21 +79,21 @@ const displayStats = computed(() => {
             value: statistics.value.projects.active.toString(),
             icon: 'folder-open',
             color: 'emerald',
-            href: route('projects.index', { status: 'active' }),
+            href: route('projects.index', { status: 'active', from: 'dashboard' }),
         },
         {
             title: 'Projets terminés',
             value: statistics.value.projects.completed.toString(),
             icon: 'check-circle',
             color: 'green',
-            href: route('projects.index', { status: 'completed' }),
+            href: route('projects.index', { status: 'completed', from: 'dashboard' }),
         },
         {
             title: 'Projets en pause',
             value: statistics.value.projects.on_hold.toString(),
             icon: 'pause',
             color: 'orange',
-            href: route('projects.index', { status: 'on_hold' }),
+            href: route('projects.index', { status: 'on_hold', from: 'dashboard' }),
         },
     ]
 })

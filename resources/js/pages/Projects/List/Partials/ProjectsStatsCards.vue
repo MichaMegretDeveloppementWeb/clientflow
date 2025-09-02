@@ -108,9 +108,12 @@ const statsCards = computed((): StatsCardData[] => [
 ])
 
 const hasValidStats = computed(() => {
-    return props.stats && 
-           typeof props.stats.total === 'number' && 
-           (props.stats.total > 0 || props.stats.active > 0 || props.stats.completed > 0)
+    // Des stats sont valides si l'objet existe avec les propriétés attendues
+    // Même si toutes les valeurs sont à 0, ce sont des stats valides
+    return props.stats &&
+           typeof props.stats.total === 'number' &&
+           typeof props.stats.active === 'number' &&
+           typeof props.stats.completed === 'number'
 })
 
 const handleCardClick = (card: StatsCardData) => {

@@ -35,10 +35,10 @@
                                 {{ item.title }}
                                 <span v-if="item.delay" class="ml-2 text-red-600 text-sm">({{ item.delay }})</span>
                             </div>
-                            <div class="text-sm text-gray-600">{{ 
-                                item.key === 'created' || item.key === 'completed' 
-                                    ? formatDateTime(item.date) 
-                                    : formatDate(item.date) 
+                            <div class="text-sm text-gray-600">{{
+                                item.key === 'created' || item.key === 'completed'
+                                    ? formatDate(item.date)
+                                    : formatDate(item.date)
                             }}</div>
                         </div>
                     </div>

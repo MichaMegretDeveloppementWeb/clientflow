@@ -1,4 +1,4 @@
-import { computed, reactive, onMounted, onUnmounted, ref } from 'vue'
+import { computed, reactive, ref, onMounted, onUnmounted } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import { useProjectFilters } from './useProjectFilters'
 import { useProjectPagination } from './useProjectPagination'
@@ -10,20 +10,20 @@ import type {
 } from '@/types/projects/list/components'
 import type { ProjectFilters } from '@/types/projects/list/filters'
 
-export function useProjectListManager(initialProps: ProjectListProps & { skeleton_mode?: boolean; clients?: Array<{ id: number; name: string }> }) {
+export function useProjectListManager(initialProps: ProjectListProps & { clients?: Array<{ id: number; name: string }> }) {
 
     // Clients disponibles pour les filtres
     const availableClients = ref(initialProps.clients || [])
 
     // Sous-composables spécialisés
-    const filters = useProjectFilters(initialProps.filters, availableClients)
+    const filters = useProjectFilters(initialProps.filters || {}, availableClients)
     const pagination = useProjectPagination(initialProps.projects?.meta || { current_page: 1, per_page: 15, total: 0, last_page: 1 })
     const appState = useAppState()
 
     // État global
     const globalState = reactive<ProjectListState>({
         projects: initialProps.projects?.data || [],
-        stats: initialProps.stats || { active: 0, completed: 0, on_hold: 0, total: 0 },
+        stats: initialProps.stats || {},
         filters: filters.filters,
         pagination: pagination.paginationState,
         isLoading: false,
@@ -37,9 +37,12 @@ export function useProjectListManager(initialProps: ProjectListProps & { skeleto
         filters: false,
         search: false,
         sort: false,
-        pagination: false
+        pagination: false,
+        deletion: false
     })
 
+    // Flag pour savoir si les stats ont été chargées au moins une fois
+    const hasStatsLoadedOnce = ref(false)
 
     // Fonction utilitaire pour construire les paramètres de requête
     const buildQueryParams = (filtersState: typeof filters.filters, paginationState?: any) => {
@@ -82,8 +85,76 @@ export function useProjectListManager(initialProps: ProjectListProps & { skeleto
         params.per_page = paginationState?.perPage
             ? paginationState.perPage.toString()
             : undefined
-
         return params
+    }
+
+    // Méthode de chargement initial via fetch (comme le dashboard)
+    const loadInitialData = async (force: boolean = false): Promise<void> => {
+        // Charger seulement si pas déjà de données (éviter double chargement)
+        if (!force && globalState.projects.length > 0 && Object.keys(globalState.stats).length > 0) {
+            return
+        }
+
+        loadingStates.projects = true
+        loadingStates.stats = true
+        globalState.isLoading = true
+        globalState.error = null
+
+        try {
+            const params = buildQueryParams(filters.filters, pagination.paginationState)
+            const queryString = new URLSearchParams()
+
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined) {
+                    queryString.append(key, String(value))
+                }
+            })
+
+            const url = route('projects.index') + (queryString.toString() ? '?' + queryString.toString() : '')
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-Inertia': 'true',
+                    'X-Inertia-Partial-Component': 'Projects/List/Index',
+                    'X-Inertia-Partial-Data': 'projectsData',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                }
+            })
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`)
+            }
+
+            const data = await response.json()
+
+            if (data.props?.projectsData) {
+                const projectsData = data.props.projectsData
+
+                globalState.projects = projectsData.projects?.data || []
+                globalState.stats = projectsData.stats || {}
+
+                if (projectsData.projects?.meta) {
+                    pagination.updateMeta(projectsData.projects.meta)
+                }
+
+                if (projectsData.clients) {
+                    availableClients.value = projectsData.clients
+                }
+
+                hasStatsLoadedOnce.value = true
+            }
+        } catch (error) {
+            globalState.error = error instanceof Error ? error.message : 'Une erreur est survenue lors du chargement des données'
+            console.error('Erreur lors du chargement initial:', error)
+        } finally {
+            globalState.isLoading = false
+            loadingStates.projects = false
+            loadingStates.stats = false
+        }
     }
 
     // Computeds
@@ -112,8 +183,20 @@ export function useProjectListManager(initialProps: ProjectListProps & { skeleto
         return globalState.projects
     })
 
+    // Computed pour le skeleton des cartes (indépendant des stats)
+    const isCardsLoading = computed(() =>
+        loadingStates.deletion ||
+        loadingStates.projects ||
+        globalState.isLoading
+    )
 
-    // Méthode centralisée pour charger les données projets
+    const isStatsLoading = computed(() =>
+        loadingStates.deletion ||
+        loadingStates.stats
+    )
+
+
+    // Méthode pour les navigations réelles (filtres, pagination)
     const fetchProjectsData = async (options: {
         showLoading?: boolean
         resetPagination?: boolean
@@ -130,15 +213,18 @@ export function useProjectListManager(initialProps: ProjectListProps & { skeleto
             resetPagination ? null : pagination.paginationState
         )
 
-        router.reload({
-            only: ['data'],
-            data: params,
+        // Navigation complète pour mettre à jour l'URL dans l'historique
+        router.get(route('projects.index'), params, {
+            only: ['projectsData'],
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
             onStart: () => {
                 globalState.isLoading = true
                 loadingStates.projects = true
             },
             onFinish: () => {
-                const pageData = usePage().props.data as any
+                const pageData = usePage().props.projectsData as any
 
                 // Vérifier si c'est une erreur retournée par le contrôleur
                 if (pageData && pageData.error) {
@@ -148,16 +234,17 @@ export function useProjectListManager(initialProps: ProjectListProps & { skeleto
                     return
                 }
 
-                if (pageData && pageData.projects && pageData.statistics) {
+                if (pageData && pageData.projects && pageData.stats) {
                     // Mise à jour centralisée de l'état
                     globalState.projects = pageData.projects.data || []
-                    globalState.stats = pageData.statistics
-                    
+                    globalState.stats = pageData.stats
+                    hasStatsLoadedOnce.value = true
+
                     // Vérifier que les métadonnées de pagination existent
                     if (pageData.projects.meta) {
                         pagination.updateMeta(pageData.projects.meta)
                     }
-                    
+
                     globalState.error = null
 
                     // Mise à jour des clients disponibles si fournis
@@ -183,34 +270,29 @@ export function useProjectListManager(initialProps: ProjectListProps & { skeleto
         appState.notifySuccess('Projets actualisés', 'La liste des projets a été mise à jour')
     }
 
+    // Plus besoin de loadRealData - géré par Inertia::defer et <Deferred>
     const loadRealData = async (): Promise<void> => {
-        try {
-            await fetchProjectsData({ showLoading: true })
-        } catch (error) {
-            console.error('Load real data error:', error)
-        }
+        // Méthode conservée pour compatibilité mais ne fait rien
+        // Le chargement est maintenant géré par Inertia::defer
     }
 
     const applyFilters = async (newFilters: Partial<ProjectFilters>): Promise<void> => {
         // Déléguer la modification d'état au composable dédié
         filters.updateFilters(newFilters)
-
         // Recharger les données (URL mise à jour automatiquement)
         await fetchProjectsData({ resetPagination: true })
     }
 
     const clearFilters = async (): Promise<void> => {
-        // Déléguer la remise à zéro au composable dédié
+        // Effacer tous les filtres via le composable dédié
         filters.clearAllFilters()
-
         // Recharger les données (URL mise à jour automatiquement)
         await fetchProjectsData({ resetPagination: true })
     }
 
     const clearFilter = async (key: keyof ProjectFilters): Promise<void> => {
-        // Déléguer l'effacement au composable dédié
+        // Supprimer le filtre spécifique via le composable dédié
         filters.clearFilter(key)
-
         // Recharger les données (URL mise à jour automatiquement)
         await fetchProjectsData({ resetPagination: true })
     }
@@ -241,6 +323,11 @@ export function useProjectListManager(initialProps: ProjectListProps & { skeleto
         globalState.error = null
     }
 
+    // Fonctions pour gérer l'état de suppression
+    const setDeletionLoading = (isLoading: boolean): void => {
+        loadingStates.deletion = isLoading
+    }
+
     // API complète des actions
     const actions: ProjectListActions = {
         refreshProjects,
@@ -257,9 +344,10 @@ export function useProjectListManager(initialProps: ProjectListProps & { skeleto
         // Autres nettoyages si nécessaire
     }
 
-    // Lifecycle
+
+    // Lifecycle - Charger les données au premier rendu seulement si pas de données dans les props
     onMounted(() => {
-        fetchProjectsData()
+        loadInitialData(true)
     })
 
     onUnmounted(() => {
@@ -276,6 +364,9 @@ export function useProjectListManager(initialProps: ProjectListProps & { skeleto
         filters,
         pagination,
 
+        // Flags de chargement
+        hasStatsLoadedOnce,
+
         // Computeds
         isAnyLoading,
         hasData,
@@ -283,11 +374,16 @@ export function useProjectListManager(initialProps: ProjectListProps & { skeleto
         hasError,
         hasResults,
         displayedProjects,
+        isCardsLoading,
+        isStatsLoading,
 
         // Actions principales
         ...actions,
         loadRealData,
+        loadInitialData,
+        fetchProjectsData,
         clearError,
+        setDeletionLoading,
 
         // Nettoyage
         cleanup

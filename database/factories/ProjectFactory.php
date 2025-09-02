@@ -57,13 +57,27 @@ class ProjectFactory extends Factory
     {
         $faker = \Faker\Factory::create('fr_FR');
         
-        // Generate project dates
-        $startDate = $faker->dateTimeBetween('-18 months', '+3 months');
+        // Generate project dates (jamais dans le futur)
+        $startDate = $faker->dateTimeBetween('-18 months', 'today');
         
-        // Ensure end date is after start date
+        // Ensure end date is after start date but not in the future
         $minEndDate = (clone $startDate)->modify('+1 day');
-        $maxEndDate = (clone $startDate)->modify('+12 months');
-        $endDate = $faker->dateTimeBetween($minEndDate, $maxEndDate);
+        $maxEndDate = min(
+            (clone $startDate)->modify('+12 months')->getTimestamp(),
+            strtotime('today')
+        );
+        
+        // Si le projet a commencé récemment, il peut ne pas avoir de date de fin
+        if ($startDate->getTimestamp() > strtotime('-3 months')) {
+            // 60% de chance de ne pas avoir de date de fin pour les projets récents
+            if ($faker->boolean(60)) {
+                $endDate = null;
+            } else {
+                $endDate = $faker->dateTimeBetween($minEndDate, date('Y-m-d H:i:s', $maxEndDate));
+            }
+        } else {
+            $endDate = $faker->dateTimeBetween($minEndDate, date('Y-m-d H:i:s', $maxEndDate));
+        }
         
         // Determine status based on dates
         $status = $this->determineStatus($startDate, $endDate, $faker);
@@ -164,23 +178,24 @@ class ProjectFactory extends Factory
     /**
      * Determine project status based on dates
      */
-    private function determineStatus(\DateTime $startDate, \DateTime $endDate, $faker): ProjectStatus
+    private function determineStatus(\DateTime $startDate, ?\DateTime $endDate, $faker): ProjectStatus
     {
         $now = new \DateTime();
         
-        // If project hasn't started yet, it's active
-        if ($startDate > $now) {
+        // Les projets ne commencent jamais dans le futur
+        // Si pas de date de fin, le projet est actif
+        if ($endDate === null) {
             return ProjectStatus::Active;
         }
         
         // If project has ended
         if ($endDate < $now) {
             // Most ended projects are completed
-            if ($faker->boolean(70)) {
+            if ($faker->boolean(75)) {
                 return ProjectStatus::Completed;
             }
             // Some are cancelled
-            if ($faker->boolean(50)) {
+            if ($faker->boolean(30)) {
                 return ProjectStatus::Cancelled;
             }
             // Others might still be active (overrun)
@@ -188,7 +203,7 @@ class ProjectFactory extends Factory
         }
         
         // Project is in progress
-        if ($faker->boolean(80)) {
+        if ($faker->boolean(85)) {
             return ProjectStatus::Active;
         }
         

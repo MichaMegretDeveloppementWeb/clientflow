@@ -1,54 +1,49 @@
 <template>
-    <div class="border-b border-gray-200 pb-6">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <!-- Titre et breadcrumb -->
-            <div class="min-w-0 flex-1">
-                <nav class="flex mb-2" aria-label="Breadcrumb">
-                    <ol class="flex items-center space-x-2 text-sm">
-                        <li>
-                            <Link :href="route('dashboard')" class="text-gray-500 hover:text-gray-700">
-                                Tableau de bord
-                            </Link>
-                        </li>
-                        <Icon name="chevron-right" class="h-4 w-4 text-gray-400" />
-                        <li>
-                            <span class="text-gray-900 font-medium">Événements</span>
-                        </li>
-                    </ol>
-                </nav>
-                <h1 class="text-2xl font-semibold text-gray-900">
-                    Gestion des événements
-                </h1>
-                <p class="mt-2 text-sm text-gray-600">
-                    Gérez vos tâches et facturations pour tous vos projets
+    <div class="border-b border-gray-100 pb-8">
+        <!-- Breadcrumb navigation -->
+        <nav class="mb-6 flex items-center gap-3" aria-label="Breadcrumb">
+            <Link
+                :href="route('dashboard')"
+                class="flex items-center gap-2 text-sm text-gray-500 transition-colors hover:text-gray-700"
+            >
+                <Icon name="home" class="h-4 w-4" />
+                <span>Tableau de bord</span>
+            </Link>
+            <Icon name="chevron-right" class="h-4 w-4 text-gray-400" />
+            <span class="text-sm font-medium text-gray-900">Événements</span>
+        </nav>
+
+        <!-- Main header content -->
+        <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <div class="mb-2 flex items-center gap-3">
+                    <div class="rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 p-2 shadow-sm">
+                        <Icon name="calendar" class="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold tracking-tight text-gray-900">
+                            Événements
+                        </h1>
+                    </div>
+                </div>
+                <p class="max-w-2xl leading-relaxed text-gray-600">
+                    Gérez vos tâches et facturations pour tous vos projets.
+                    <span v-if="isLoading" class="ml-2 inline-flex items-center gap-1 text-sm">
+                        <span class="h-2 w-2 animate-pulse rounded-full bg-purple-500"></span>
+                        Chargement...
+                    </span>
                 </p>
             </div>
 
-            <!-- Actions -->
-            <div class="flex items-center gap-3">
-                <!-- Bouton Créer -->
+            <div class="flex flex-col gap-2 sm:flex-row">
+                <!-- Create event button -->
                 <Button
-                    size="sm"
                     @click="$emit('create')"
                     class="w-full border-0 bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 sm:w-auto"
                 >
-                    <Icon name="plus" class="h-4 w-4" />
-                    <span class="ml-2">Nouvel événement</span>
+                    <Icon name="plus" class="mr-2 h-4 w-4" />
+                    Nouvel événement
                 </Button>
-            </div>
-        </div>
-
-        <!-- Indicateurs de filtres actifs -->
-        <div v-if="hasActiveFilters" class="mt-4">
-            <div class="flex items-center gap-2">
-                <Icon name="filter" class="h-4 w-4 text-amber-500" />
-                <span class="text-sm text-amber-600 font-medium">
-                    Des filtres sont actifs
-                </span>
-                <div class="h-1 w-1 rounded-full bg-amber-400"></div>
-                <span class="text-sm text-gray-500">
-                    Utilisez le panneau de filtres pour les modifier
-                </span>
             </div>
         </div>
     </div>

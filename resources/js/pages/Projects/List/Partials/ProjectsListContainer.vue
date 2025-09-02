@@ -1,5 +1,15 @@
 <template>
-    <div class="space-y-8">
+    <div class="relative space-y-8">
+        <!-- Overlay de suppression en cours -->
+        <div
+            v-if="isDeletionInProgress"
+            class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+        >
+            <div class="bg-white rounded-lg p-6 shadow-lg flex items-center gap-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span class="text-gray-900 font-medium">Suppression en cours...</span>
+            </div>
+        </div>
         <!-- Header avec breadcrumb et actions -->
         <ProjectsHeader
             :has-active-filters="listManager.filters.hasActiveFilters.value"
@@ -12,7 +22,7 @@
         <ProjectsStatsCards
             :stats="listManager.globalState.stats"
             :current-filters="listManager.filters.filters"
-            :is-loading="skeletonLoader.showSkeleton(true, listManager.loadingStates.stats)"
+            :is-loading="listManager.isStatsLoading.value"
             @filter-selected="handleStatsFilterClick"
         />
 
@@ -32,7 +42,7 @@
         <!-- Cartes des projets -->
         <ProjectsCards
             :projects="listManager.displayedProjects.value"
-            :is-loading="skeletonLoader.showSkeleton(true, listManager.loadingStates.projects)"
+            :is-loading="listManager.isCardsLoading.value"
             :has-active-filters="listManager.filters.hasActiveFilters.value"
             @project-click="handleProjectClick"
             @project-delete="handleProjectDelete"
@@ -52,7 +62,7 @@
 
         <!-- État vide -->
         <ProjectsEmptyState
-            v-if="listManager.isEmpty.value && !skeletonLoader.showSkeleton(true, listManager.loadingStates.projects)"
+            v-if="listManager.isEmpty.value"
             :has-active-filters="listManager.filters.hasActiveFilters.value"
             @clear-filters="handleClearAllFilters"
             @create-project="handleCreate"
@@ -90,8 +100,6 @@
 import { ref, onMounted, onUnmounted, provide } from 'vue'
 import { useProjectListManager } from '@/composables/projects/list'
 import { useProjectActions } from '@/composables/projects/list/useProjectActions'
-import { useSkeletonLoader } from '@/composables/useSkeletonLoader'
-import { useConnectionDetection } from '@/composables/useConnectionDetection'
 import Icon from '@/components/Icon.vue'
 import { Button } from '@/components/ui/button'
 
@@ -108,10 +116,9 @@ import type { ProjectDTO } from '@/types/models'
 
 const props = defineProps<{
     skeletonData: ProjectListProps & {
-        skeleton_mode?: boolean
         clients?: Array<{ id: number; name: string }>
     }
-    data?: any
+    projectsData?: any
 }>()
 
 const emit = defineEmits<{
@@ -119,27 +126,17 @@ const emit = defineEmits<{
     'filters-changed': [filters: any]
 }>()
 
-// État global orchestré
-const listManager = useProjectListManager(props.skeletonData)
+// État global orchestré - Utiliser projectsData si disponible, sinon skeletonData
+const initialData = props.projectsData || props.skeletonData
+const listManager = useProjectListManager(initialData)
 const projectActions = useProjectActions()
-const connectionDetection = useConnectionDetection()
-const skeletonLoader = useSkeletonLoader(
-    props.skeletonData.skeleton_mode ?? false,
-    connectionDetection.getOptimalSkeletonDelay()
-)
 
 // États locaux UI
 const showFilters = ref(false)
+const isDeletionInProgress = ref(false)
 
 // Fournir l'état aux composants enfants
 provide('listManager', listManager)
-
-// Vérifier si les données initiales contiennent une erreur
-onMounted(() => {
-    if (props.data && props.data.error) {
-        listManager.globalState.error = props.data.debug_message || props.data.message || 'Une erreur est survenue lors du chargement des données'
-    }
-})
 
 // Gestionnaires d'événements
 const handleRefresh = async () => {
@@ -183,13 +180,28 @@ const handleProjectClick = (project: ProjectDTO) => {
 }
 
 const handleProjectDelete = (projectId: number) => {
-    projectActions.deleteProject(
-        projectId,
-        () => {
+    // Phase 1 : Loader de suppression
+    isDeletionInProgress.value = true
+
+    projectActions.deleteProject(projectId, {
+        onSuccess: async () => {
+            // Fin phase 1
+            isDeletionInProgress.value = false
+            // Phase 2 : Skeleton pour le rechargement des données
+            listManager.setDeletionLoading(true)
+            await listManager.fetchProjectsData()
             emit('project-deleted', projectId)
-            listManager.refreshProjects()
+        },
+        onFinish: () => {
+            // S'assurer que tout est nettoyé
+            isDeletionInProgress.value = false
+            listManager.setDeletionLoading(false)
+        },
+        onError: () => {
+            // Nettoyer en cas d'erreur
+            isDeletionInProgress.value = false
         }
-    )
+    })
 }
 
 const handlePageChange = async (page: number) => {

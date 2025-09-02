@@ -4,7 +4,7 @@
     <AppLayout>
         <ProjectsListContainer
             :skeleton-data="skeletonData"
-            :data="data"
+            :projects-data="projectsData"
             @project-deleted="handleProjectDeleted"
             @filters-changed="handleFiltersChanged"
         />
@@ -18,10 +18,8 @@ import ProjectsListContainer from './Partials/ProjectsListContainer.vue'
 import type { ProjectListProps } from '@/types/projects/list'
 
 interface Props {
-    skeletonData: ProjectListProps & {
-        skeleton_mode?: boolean
-    }
-    data?: any
+    skeletonData: ProjectListProps
+    projectsData?: any
 }
 
 const props = defineProps<Props>()

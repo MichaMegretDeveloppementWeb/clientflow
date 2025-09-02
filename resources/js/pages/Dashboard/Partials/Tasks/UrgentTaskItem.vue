@@ -1,7 +1,7 @@
 <template>
     <Link
         :href="route('events.show', task.id)"
-        class="group flex items-start gap-3 rounded-xl border p-4 transition-all duration-200 task-container hover-lift"
+        class="group flex items-start gap-3 rounded-xl p-4 transition-all duration-200 task-container"
         :class="taskClasses"
     >
         <!-- Icône de statut -->
@@ -27,7 +27,7 @@
             </div>
 
             <!-- Projet/client et montant -->
-            <div class="mb-4 mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div class="mb-2 mt-2 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <p class="break-words text-sm text-gray-600">
                     {{ task.project.name }} - <b>{{ task.project.client.name }}</b>
                 </p>
@@ -43,7 +43,7 @@
             <!-- Badge de statut temporel -->
             <div class="flex">
                 <div
-                    class="inline-flex w-fit items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ring-1"
+                    class="inline-flex w-fit items-center gap-1 rounded-full text-xs font-medium"
                     :class="getTimeBadgeClasses(task)"
                 >
                     <OptimizedIcon :name="getTimeBadgeIcon(task)" :size="12" />
@@ -59,10 +59,8 @@
 import { computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import OptimizedIcon from '@/components/OptimizedIcon.vue';
-import StatusBadge from '@/components/StatusBadge.vue';
 import type { Task } from '@/types/dashboard/tasks';
 import { isStepTask, isBillingTask } from '@/types/dashboard/tasks';
-import Icon from '@/components/Icon.vue';
 
 // Props
 interface Props {
@@ -75,14 +73,14 @@ const props = defineProps<Props>();
 const taskClasses = computed(() => {
 
     if (props.task.is_overdue) {
-        return 'border-red-200 bg-red-50 hover:border-red-300 hover:bg-red-100';
+        return 'hover:border-red-300 hover:bg-red-100';
     }
 
     if (isToday(getReferenceDate(props.task))) {
-        return 'border-amber-200 bg-amber-50 hover:border-amber-300 hover:bg-amber-100';
+        return 'hover:border-amber-300 hover:bg-amber-100';
     }
 
-    return 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm';
+    return 'hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm';
 });
 
 const iconClasses = computed(() => {
@@ -137,29 +135,6 @@ const getReferenceDate = (task: Task): string => {
     return isStepTask(task) ? task.execution_date : task.send_date;
 };
 
-const getDaysOverdue = (task: Task): number => {
-    if (isStepTask(task)) {
-        return Math.round(task.days_overdue ?? 0);
-    }
-    // For billing tasks, calculate days overdue manually if needed
-    const today = new Date();
-    const sendDate = new Date(task.send_date);
-    return Math.max(0, Math.round((today.getTime() - sendDate.getTime()) / (1000 * 60 * 60 * 24)));
-};
-
-const getDateLabel = (task: Task): string => {
-    const dateStr = getReferenceDate(task);
-    if (!dateStr) return 'À planifier';
-
-    const date = new Date(dateStr);
-    const formattedDate = date.toLocaleDateString('fr-FR');
-
-    if (task.event_type === 'step') {
-        return `À faire le ${formattedDate}`;
-    }
-
-    return `À envoyer le ${formattedDate}`;
-};
 
 // Obtenir le texte du badge temporel
 const getTimeBadgeText = (task: Task): string => {
@@ -214,26 +189,26 @@ const getTimeBadgeClasses = (task: Task): string => {
 
     // En retard
     if (diffDays < 0) {
-        return 'bg-red-50 text-red-700 ring-red-600/20';
+        return 'text-red-700';
     }
 
     // Aujourd'hui
     if (diffDays === 0) {
-        return 'bg-amber-50 text-amber-700 ring-amber-600/20';
+        return 'text-amber-700';
     }
 
     // Demain ou dans 2 jours
     if (diffDays <= 2) {
-        return 'bg-orange-50 text-orange-700 ring-orange-600/20';
+        return 'text-orange-700';
     }
 
     // Dans 3-7 jours
     if (diffDays <= 7) {
-        return 'bg-blue-50 text-blue-700 ring-blue-600/20';
+        return 'text-blue-700';
     }
 
     // Plus tard
-    return 'bg-gray-50 text-gray-700 ring-gray-600/20';
+    return 'text-gray-700';
 };
 
 // Nouveau : obtenir l'icône du badge

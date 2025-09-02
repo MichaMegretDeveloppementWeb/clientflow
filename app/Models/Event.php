@@ -58,7 +58,7 @@ class Event extends Model
 
     public function scopeRecent($query, int $days = 30)
     {
-        return $query->where('created_at', '>=', now()->subDays($days));
+        return $query->where('created_date', '>=', now()->subDays($days));
     }
 
     public function scopeByType($query, string $type)

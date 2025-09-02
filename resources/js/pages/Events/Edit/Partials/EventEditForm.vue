@@ -195,21 +195,21 @@
 
                             <!-- Date de création -->
                             <div class="space-y-3">
-                                <Label for="created_at" class="text-sm font-medium text-gray-700">Date de création *</Label>
+                                <Label for="created_date" class="text-sm font-medium text-gray-700">Date de création *</Label>
                                 <div class="relative">
                                     <Icon name="clock" class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                                     <Input
-                                        id="created_at"
-                                        v-model="form.created_at"
-                                        @input="form.clearErrors('created_at')"
+                                        id="created_date"
+                                        v-model="form.created_date"
+                                        @input="form.clearErrors('created_date')"
                                         type="date"
                                         required
                                         :min="getProjectStartDateForInput()"
                                         class="text-sm h-11 border-gray-200 pl-10 focus:border-emerald-500 focus:ring-emerald-500"
-                                        :class="{ 'border-red-500 focus:border-red-500': (form && form.errors && form.errors.created_at) || (hasValidation && validation && validation.createdAtValidationError) }"
+                                        :class="{ 'border-red-500 focus:border-red-500': (form && form.errors && form.errors.created_date) || (hasValidation && validation && validation.createdAtValidationError) }"
                                     />
                                 </div>
-                                <InputError :message="form.errors.created_at" />
+                                <InputError :message="form.errors.created_date" />
                                 <InputError v-if="hasValidation && validation && validation.createdAtValidationError" :message="validation.createdAtValidationError" />
                             </div>
                         </div>
