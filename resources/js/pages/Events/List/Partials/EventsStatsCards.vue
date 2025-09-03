@@ -115,6 +115,7 @@ const hasValidStats = computed(() => {
            typeof props.stats.overdue === 'number'
 })
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const hasStatusFilter = computed(() => {
     return props.currentFilters.status && props.currentFilters.status !== 'all'
 })

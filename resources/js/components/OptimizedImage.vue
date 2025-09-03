@@ -175,7 +175,7 @@ const retryCount = ref(0);
 const maxRetries = 3;
 
 // Hook d'optimisation d'images
-const { getOptimalImageSize, createResponsiveImageUrls } = useImageOptimization();
+const { getOptimalImageSize } = useImageOptimization();
 
 // Observer pour lazy loading
 let intersectionObserver: IntersectionObserver | null = null;

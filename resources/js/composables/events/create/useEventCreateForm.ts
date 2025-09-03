@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
-import type { EventCreateFormData, EventCreateFormValidation, EventCreateProject } from '@/types/events/create'
+import type { EventCreateFormValidation, EventCreateProject } from '@/types/events/create'
 
 export function useEventCreateForm(
     projects: Array<EventCreateProject>, 

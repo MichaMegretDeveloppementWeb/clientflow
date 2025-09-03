@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import type { BillingData, BillingResponse, BillingCard } from '@/types/dashboard/billing'
+import type { BillingData, BillingResponse } from '@/types/dashboard/billing'
 import { route } from 'ziggy-js'
 
 export function useBilling() {

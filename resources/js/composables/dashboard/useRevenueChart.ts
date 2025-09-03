@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import type { RevenueChartData, RevenueChartResponse, ChartPeriod } from '@/types/dashboard/chart'
+import type { RevenueChartData, RevenueChartResponse } from '@/types/dashboard/chart'
 import { route } from 'ziggy-js'
 
 export function useRevenueChart() {

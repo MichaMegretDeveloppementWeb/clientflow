@@ -147,36 +147,8 @@ const emit = defineEmits<{
     delete: []
 }>()
 
-// Logique de statut minimaliste - texte coloré uniquement
-const getStatusTextClass = () => {
-    if (props.client.has_overdue_payments) {
-        return 'text-red-600'
-    }
-    if (props.client.active_projects_count > 0) {
-        return 'text-emerald-600'
-    }
-    return 'text-slate-500'
-}
-
-const getStatusIcon = () => {
-    if (props.client.has_overdue_payments) {
-        return 'alert-triangle'
-    }
-    if (props.client.active_projects_count > 0) {
-        return 'check-circle'
-    }
-    return 'circle'
-}
-
-const getStatusLabel = () => {
-    if (props.client.has_overdue_payments) {
-        return 'Urgent'
-    }
-    if (props.client.active_projects_count > 0) {
-        return 'Actif'
-    }
-    return 'Inactif'
-}
+// Fonctions de statut (actuellement implémentées directement dans le template)
+// Si besoin futur d'une logique de statut centralisée, ces fonctions peuvent être réactivées
 
 // Formatage des données
 const formatCurrencyCompact = (amount: number): string => {
@@ -194,17 +166,17 @@ const formatPhoneNumber = (phone: string): string => {
     return phone.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5')
 }
 
-const formatRelativeDate = (dateString: string): string => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+// const formatRelativeDate = (dateString: string): string => {
+//     const date = new Date(dateString)
+//     const now = new Date()
+//     const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
 
-    if (diffInDays === 0) return 'aujourd\'hui'
-    if (diffInDays === 1) return 'hier'
-    if (diffInDays < 30) return `il y a ${diffInDays}j`
-    if (diffInDays < 365) return `il y a ${Math.floor(diffInDays / 30)}m`
-    return `il y a ${Math.floor(diffInDays / 365)}a`
-}
+//     if (diffInDays === 0) return 'aujourd\'hui'
+//     if (diffInDays === 1) return 'hier'
+//     if (diffInDays < 30) return `il y a ${diffInDays}j`
+//     if (diffInDays < 365) return `il y a ${Math.floor(diffInDays / 30)}m`
+//     return `il y a ${Math.floor(diffInDays / 365)}a`
+// } // Fonction réservée pour affichage de dates relatives si besoin
 
 // Gestionnaires d'événements
 const handleClick = () => {

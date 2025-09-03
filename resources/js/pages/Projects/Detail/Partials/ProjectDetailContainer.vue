@@ -176,8 +176,8 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
 import { Button } from '@/components/ui/button'
-import { Link } from '@inertiajs/vue3'
-import { route } from 'ziggy-js'
+// import { Link } from '@inertiajs/vue3' // Réservé pour futurs liens
+// import { route } from 'ziggy-js' // Réservé pour futures routes
 import type { ProjectDetailData } from '@/types/projects/detail'
 import type { Event } from '@/types/projects/events'
 
@@ -196,7 +196,8 @@ interface Props {
     error: Record<string, string> | null
 }
 
-const props = defineProps<Props>()
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _props = defineProps<Props>()
 
 defineEmits<{
     'update-status': [status: string]

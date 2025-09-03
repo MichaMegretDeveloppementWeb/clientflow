@@ -22,7 +22,8 @@ interface Props {
     projectsData?: any
 }
 
-const props = defineProps<Props>()
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _props = defineProps<Props>()
 
 const handleProjectDeleted = (projectId: number) => {
     console.log('Project deleted:', projectId)

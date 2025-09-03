@@ -66,7 +66,7 @@ const isLoading = ref(false);
 const error = ref<string | null>(null);
 
 // Hook d'optimisation
-const { getIcon, preloadForContext } = useIconOptimization();
+const { getIcon } = useIconOptimization();
 
 // Calculs
 const computedSize = computed(() => {

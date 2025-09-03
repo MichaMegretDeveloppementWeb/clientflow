@@ -19,8 +19,8 @@ export function useVirtualScroll<T extends VirtualScrollItem>(
     const {
         itemHeight,
         containerHeight = 400,
-        bufferSize = 5,
-        scrollDebounce = 16 // ~60fps
+        bufferSize = 5
+        // scrollDebounce reserved for future scroll throttling
     } = options;
 
     // État
@@ -97,8 +97,8 @@ export function useVirtualScroll<T extends VirtualScrollItem>(
             // Recalculer si nécessaire
             nextTick(() => {
                 if (containerRef.value) {
-                    const rect = containerRef.value.getBoundingClientRect();
-                    // Optionnel: ajuster containerHeight dynamiquement
+                    // const rect = containerRef.value.getBoundingClientRect();
+                    // Future: ajuster containerHeight dynamiquement
                 }
             });
         });
@@ -260,7 +260,8 @@ export function useVirtualPagination<T extends VirtualScrollItem>(
     };
 
     // Détection du scroll vers le bas
-    const { visibleItems, endIndex } = virtualScroll;
+    const { endIndex } = virtualScroll;
+    // visibleItems available but not used in this context
     
     // Observer si on approche de la fin
     const shouldLoadMore = computed(() => {

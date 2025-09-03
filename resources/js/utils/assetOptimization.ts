@@ -16,6 +16,7 @@ interface ImageOptimizationOptions {
     progressive?: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface IconOptimizationOptions {
     size?: number;
     strokeWidth?: number;

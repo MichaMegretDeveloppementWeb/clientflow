@@ -272,7 +272,7 @@ export function useIconOptimization() {
 }
 
 // Hook spécialisé pour les icônes dans les composants
-export function useOptimizedIcon(iconName: string, context?: string) {
+export function useOptimizedIcon(iconName: string) {
     const iconData = ref<string>('');
     const isLoading = ref(false);
     const error = ref<string | null>(null);

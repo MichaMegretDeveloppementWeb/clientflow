@@ -36,8 +36,9 @@
 </template>
 
 <script setup lang="ts">
-import { Card, CardContent } from '@/components/ui/card'
-import Icon from '@/components/Icon.vue'
+import { toRefs } from 'vue'
+// import { Card, CardContent } from '@/components/ui/card' // Réservé pour futurs composants
+// import Icon from '@/components/Icon.vue' // Réservé pour états vides
 import ClientCard from './ClientCard.vue'
 import ClientCardSkeleton from './ClientCardSkeleton.vue'
 import type { ClientDTO } from '@/types/models'
@@ -61,7 +62,11 @@ const props = withDefaults(defineProps<Props>(), {
     hasActiveFilters: false
 })
 
-const emit = defineEmits<{
+// Props utilisées dans le template via destructuring automatique
+const { clients, isLoading } = toRefs(props)
+// hasActiveFilters réservé pour futur usage dans états vides
+
+defineEmits<{
     'client-click': [client: ClientDTO]
     'client-delete': [clientId: number]
 }>()

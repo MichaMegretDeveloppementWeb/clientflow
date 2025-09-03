@@ -1,7 +1,6 @@
 import { router } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
 import { useAppState } from '@/composables/useAppState'
-import type { ClientDTO } from '@/types/models'
 
 export function useClientActions() {
     const appState = useAppState()

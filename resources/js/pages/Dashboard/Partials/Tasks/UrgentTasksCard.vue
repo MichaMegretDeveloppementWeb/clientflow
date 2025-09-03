@@ -189,13 +189,14 @@ import { Link } from '@inertiajs/vue3';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import OptimizedIcon from '@/components/OptimizedIcon.vue';
-import SkeletonLoader from '@/components/skeletons/SkeletonLoader.vue';
+// import SkeletonLoader from '@/components/skeletons/SkeletonLoader.vue'; // Skeleton intégré dans le template
 import UrgentTaskItem from './UrgentTaskItem.vue';
 import { useTasks } from '@/composables/dashboard/useTasks';
 
 // Use the tasks composable
 const {
-  tasks: urgentTasks,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  tasks: _urgentTasks,
   isLoading,
   taskCount: urgentTasksCount,
   urgentOnly,

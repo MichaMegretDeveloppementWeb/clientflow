@@ -186,7 +186,6 @@ const containerHeight = computed(() => {
 // Hook de table virtualisée
 const {
     containerRef,
-    isScrolling,
     visibleItems,
     totalHeight,
     offsetY,

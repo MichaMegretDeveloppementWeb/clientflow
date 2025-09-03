@@ -97,7 +97,8 @@ import EventTimelineCard from './EventTimelineCard.vue'
 import Icon from '@/components/Icon.vue'
 import { Button } from '@/components/ui/button'
 
-const props = defineProps({
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _props = defineProps({
     event: {
         type: Object,
         default: null

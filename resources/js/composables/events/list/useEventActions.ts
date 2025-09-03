@@ -1,7 +1,6 @@
 import { router } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
 import { useAppState } from '@/composables/useAppState'
-import type { EventDTO } from '@/types/models'
 
 export function useEventActions() {
     const appState = useAppState()

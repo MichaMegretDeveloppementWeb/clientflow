@@ -101,21 +101,21 @@
     </Card>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, toRef } from 'vue'
 import Icon from '@/components/Icon.vue'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useEventUtils } from '@/composables/events/detail/useEventUtils'
+import type { EventDTO } from '@/types/models'
 
-const props = defineProps({
-    event: {
-        type: Object,
-        default: null
-    },
-    isLoading: {
-        type: Boolean,
-        default: false
-    }
+interface Props {
+    event?: EventDTO | null
+    isLoading?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    event: null,
+    isLoading: false
 })
 
 const { formatDate, formatCurrency, getDaysOverdue, getDaysUntil } = useEventUtils(toRef(props, 'event'))

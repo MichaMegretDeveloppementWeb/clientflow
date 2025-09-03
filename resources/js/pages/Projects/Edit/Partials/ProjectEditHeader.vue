@@ -84,6 +84,7 @@ interface Props {
 
 defineProps<Props>()
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getStatusLabel(status: string): string {
     const labels = {
         active: 'Actif',

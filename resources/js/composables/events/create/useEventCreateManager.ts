@@ -1,6 +1,5 @@
 import { reactive, computed, onMounted } from 'vue'
 import { usePage, router } from '@inertiajs/vue3'
-import { route } from 'ziggy-js'
 import type { EventCreateData, EventCreateState, EventCreateSkeletonData, EventCreateFormData } from '@/types/events/create'
 
 export function useEventCreateManager(

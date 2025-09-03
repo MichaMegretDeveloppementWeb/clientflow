@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3'
 import { Card, CardContent } from '@/components/ui/card'
-import Icon from '@/components/Icon.vue'
+// import Icon from '@/components/Icon.vue' // Réservé pour états vides
 import { route } from 'ziggy-js'
 import type { ProjectDTO } from '@/types/models'
 import ProjectCardSkeleton from './ProjectCardSkeleton.vue'

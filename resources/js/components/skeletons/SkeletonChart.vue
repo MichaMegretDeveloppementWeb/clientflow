@@ -172,7 +172,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
 import SkeletonLoader from './SkeletonLoader.vue';
 
 interface Props {
@@ -193,7 +192,7 @@ interface Props {
     animated?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
     chartType: 'line',
     chartHeight: '300px',
     hasSubtitle: false,

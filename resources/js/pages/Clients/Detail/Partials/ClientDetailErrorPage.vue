@@ -45,7 +45,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import Icon from '@/components/Icon.vue'
 import { Button } from '@/components/ui/button'
 import { Link } from '@inertiajs/vue3'

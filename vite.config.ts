@@ -13,12 +13,16 @@ export default defineConfig({
         vue(),
     ],
     optimizeDeps: {
-        include: ['vue', '@inertiajs/vue3', 'ziggy-js', 'pinia'],
+        include: ['vue', '@inertiajs/vue3', 'ziggy-js'],
         force: true
     },
     server: {
         hmr: {
             overlay: false
         }
+    },
+    build: {
+        emptyOutDir: true,
+        manifest: 'manifest.json'
     }
 });

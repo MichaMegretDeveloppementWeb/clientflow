@@ -146,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { router } from '@inertiajs/vue3'
+// import { router } from '@inertiajs/vue3' // Réservé pour futures navigations
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -155,7 +155,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import Icon from '@/components/Icon.vue'
-import { route } from 'ziggy-js'
+// import { route } from 'ziggy-js' // Réservé pour futures routes
 import type { ProjectDTO } from '@/types/models'
 
 /**

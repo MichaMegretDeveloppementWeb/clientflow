@@ -157,34 +157,6 @@ export function useProjectDetailTimeline(events: Ref<Event[]>) {
         return Math.abs(getDaysUntil(event.payment_due_date))
     }
 
-    /**
-     * Label amélioré pour les paiements
-     */
-    const getEnhancedPaymentLabel = (event: Event): string => {
-        if (event.payment_status === 'paid') {
-            return 'Payé'
-        }
-
-        if (!event.payment_due_date) {
-            return 'À payer'
-        }
-
-        const daysUntil = getDaysUntil(event.payment_due_date)
-
-        if (daysUntil < 0) {
-            return 'À payer'
-        }
-
-        if (daysUntil === 0) {
-            return 'À payer aujourd\'hui'
-        }
-
-        if (daysUntil === 1) {
-            return 'À payer demain'
-        }
-
-        return `À payer dans ${daysUntil}j`
-    }
 
     return {
         // Données

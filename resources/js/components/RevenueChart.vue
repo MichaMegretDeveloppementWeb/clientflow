@@ -85,7 +85,7 @@
 <script setup lang="ts">
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/Icon.vue';
-import { onMounted, ref, onUnmounted, toRaw, nextTick } from 'vue';
+import { onMounted, ref, onUnmounted, toRaw } from 'vue';
 import {
     Chart,
     CategoryScale,

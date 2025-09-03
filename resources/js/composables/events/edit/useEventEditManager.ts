@@ -1,6 +1,5 @@
 import { reactive, computed, onMounted } from 'vue'
 import { usePage, router } from '@inertiajs/vue3'
-import { route } from 'ziggy-js'
 import type { EventEditData, EventEditState, EventEditSkeletonData, EventEditFormData } from '@/types/events/edit'
 
 export function useEventEditManager(eventId: number, skeletonData: EventEditSkeletonData, initialData?: EventEditData) {

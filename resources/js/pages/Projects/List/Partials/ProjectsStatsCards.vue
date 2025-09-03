@@ -121,7 +121,8 @@ const handleCardClick = (card: StatsCardData) => {
 
     // Si c'est pour effacer les filtres de status (carte "Total projets")
     if (card.filterKey === 'clear_status_filter') {
-        const { status, ...otherFilters } = props.currentFilters
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { status, ...otherFilters } = props.currentFilters
         router.get(route('projects.index', otherFilters), {}, {
             only: ['projects', 'stats', 'filters'],
             preserveState: true,

@@ -14,6 +14,7 @@
 
 
 <script setup lang="ts">
+import { toRefs } from 'vue'
 import { Head } from '@inertiajs/vue3'
 import AppLayout from '@/layouts/AppLayout.vue'
 import ClientsListContainer from './Partials/ClientsListContainer.vue'
@@ -32,12 +33,17 @@ interface Props {
 
 const props = defineProps<Props>()
 
+// Props utilisées dans le template via destructuring automatique
+const { skeletonData, clientsData } = toRefs(props)
+
 // Gestionnaires d'événements de haut niveau
 const handleClientDeleted = (clientId: number) => {
-    // Possibilité d'ajouter des analytics ou notifications globales
+    // Réservé : Analytics ou notifications globales futures
+    console.log('Client deleted:', clientId)
 }
 
 const handleFiltersChanged = (filters: any) => {
-    // Possibilité de persister les préférences utilisateur
+    // Réservé : Persistance des préférences utilisateur
+    console.log('Filters changed:', filters)
 }
 </script>

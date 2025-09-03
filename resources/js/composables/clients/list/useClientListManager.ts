@@ -1,5 +1,6 @@
 import { computed, reactive, ref, onMounted, onUnmounted } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
+import { route } from 'ziggy-js'
 import { useClientFilters } from './useClientFilters'
 import { useClientPagination } from './useClientPagination'
 import { useAppState } from '@/composables/useAppState'
@@ -80,6 +81,13 @@ export function useClientListManager(initialProps: ClientListProps) {
         return params
     }
 
+
+    const getInertiaVersion = (): string | null => {
+        const p: any = usePage() // suivant la version, c'est un objet ou un ref
+        return p?.version ?? p?.value?.version ?? null
+    }
+
+
     // Méthode de chargement initial via fetch (comme le dashboard)
     const loadInitialData = async (force: boolean = false): Promise<void> => {
         // Charger seulement si pas déjà de données (éviter double chargement)
@@ -91,10 +99,11 @@ export function useClientListManager(initialProps: ClientListProps) {
         loadingStates.stats = true
         globalState.isLoading = true
         globalState.error = null
-
-
+        console.log(getInertiaVersion());
         try {
+
             const params = buildQueryParams(filters.filters, pagination.paginationState)
+
             const queryString = new URLSearchParams()
 
             Object.entries(params).forEach(([key, value]) => {
@@ -114,12 +123,14 @@ export function useClientListManager(initialProps: ClientListProps) {
                     'X-Inertia': 'true',
                     'X-Inertia-Partial-Component': 'Clients/List/Index',
                     'X-Inertia-Partial-Data': 'clientsData',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    'X-Inertia-Version': getInertiaVersion(),
                 }
             })
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`)
+                // Essayons de lire le corps de la réponse pour plus d'infos
+                const errorBody = await response.text()
+                throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`)
             }
 
             const data = await response.json()
@@ -137,7 +148,7 @@ export function useClientListManager(initialProps: ClientListProps) {
                 hasStatsLoadedOnce.value = true
             }
         } catch (error) {
-            globalState.error = error instanceof Error ? error.message : 'Une erreur est survenue lors du chargement des données'
+            globalState.error = 'Une erreur est survenue lors du chargement des données'
             console.error('Erreur lors du chargement initial:', error)
         } finally {
             globalState.isLoading = false
@@ -321,7 +332,7 @@ export function useClientListManager(initialProps: ClientListProps) {
 
     // Lifecycle - Charger les données au premier rendu seulement si pas de données dans les props
     onMounted(() => {
-        loadInitialData(true)
+        loadInitialData()
     })
 
     onUnmounted(() => {

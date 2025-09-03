@@ -96,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, provide, toRef } from 'vue'
+import { ref, provide } from 'vue'
 import { useClientListManager } from '@/composables/clients/list'
 import { useClientActions } from '@/composables/clients/list/useClientActions'
 import Icon from '@/components/Icon.vue'

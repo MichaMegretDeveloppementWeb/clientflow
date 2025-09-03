@@ -3,8 +3,7 @@ import { usePage, router } from '@inertiajs/vue3'
 import type { 
     ProjectCreateData, 
     ProjectCreateState, 
-    ProjectCreateSkeletonData, 
-    ProjectCreateClient 
+    ProjectCreateSkeletonData
 } from '@/types/projects/create'
 
 export function useProjectCreateManager(

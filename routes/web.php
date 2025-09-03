@@ -40,7 +40,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Project list
     Route::get('projects', [ProjectListController::class, 'index'])->name('projects.index');
 
-    // Project CRUD (create MUST be before {project} routes)  
+    // Project CRUD (create MUST be before {project} routes)
     Route::get('projects/create', [ProjectCrudController::class, 'create'])->name('projects.create');
     Route::post('projects', [ProjectCrudController::class, 'store'])->name('projects.store');
 

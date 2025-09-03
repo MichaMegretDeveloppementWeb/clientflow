@@ -20,10 +20,6 @@ export function useClientEditManager(clientId: number, skeletonData: ClientEditS
 
     const isLoading = computed(() => state.isLoading)
     const error = computed(() => state.error)
-    const dataErrors = computed(() => {
-        const data = state.data as ClientEditData
-        return data?.errors || null
-    })
     const hasError = computed(() => {
         if (state.error) return true
         const data = state.data as ClientEditData

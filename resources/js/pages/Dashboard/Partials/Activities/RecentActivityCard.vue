@@ -150,7 +150,8 @@ import { useActivities } from '@/composables/dashboard/useActivities';
 
 // Use the activities composable
 const {
-  activities: recentActivitiesList,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  activities: _recentActivitiesList,
   isLoading,
   activitiesCount: recentActivitiesCount,
   hasActivities: hasRecentActivities,

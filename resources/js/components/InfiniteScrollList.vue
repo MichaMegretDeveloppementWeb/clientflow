@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts" generic="T extends { id: string | number }">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/Icon.vue';
 import VirtualScrollList from './VirtualScrollList.vue';

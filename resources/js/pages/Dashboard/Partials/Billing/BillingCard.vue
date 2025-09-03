@@ -121,7 +121,7 @@ const cardClasses = computed(() => {
 
 const iconBgClasses = computed(() => config.value.iconBg);
 const iconColorClasses = computed(() => config.value.iconColor);
-const navIconClasses = computed(() => config.value.navIcon);
+// const navIconClasses = computed(() => config.value.navIcon); // Réservé pour futurs éléments de navigation
 
 const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('fr-FR', {

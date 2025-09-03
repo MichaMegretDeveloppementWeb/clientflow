@@ -121,7 +121,7 @@ import { ref, onMounted, onUnmounted, defineComponent, h, computed } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
 import OptimizedIcon from '@/components/OptimizedIcon.vue';
-import RefreshButton from '@/components/RefreshButton.vue';
+// import RefreshButton from '@/components/RefreshButton.vue'; // Réservé pour futurs refreshers
 
 // Émissions
 defineEmits<{

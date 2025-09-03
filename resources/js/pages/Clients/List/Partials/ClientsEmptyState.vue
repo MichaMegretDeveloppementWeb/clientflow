@@ -92,7 +92,7 @@ const props = withDefaults(defineProps<Props>(), {
     hasActiveFilters: false
 })
 
-const emit = defineEmits<{
+defineEmits<{
     'clear-filters': []
     'create-client': []
 }>()

@@ -37,7 +37,7 @@ interface Props {
     data?: EventCreateData
 }
 
-const props = defineProps<Props>()
+const _props = defineProps<Props>()
 
 // State management
 const {
@@ -46,5 +46,5 @@ const {
     selectedProject,
     isLoading,
     hasError
-} = useEventCreateManager(props.projectId, props.skeletonData, props.data)
+} = useEventCreateManager(_props.projectId, _props.skeletonData, _props.data)
 </script>

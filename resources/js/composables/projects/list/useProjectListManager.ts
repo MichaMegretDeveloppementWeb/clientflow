@@ -1,5 +1,6 @@
 import { computed, reactive, ref, onMounted, onUnmounted } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
+import { route } from 'ziggy-js'
 import { useProjectFilters } from './useProjectFilters'
 import { useProjectPagination } from './useProjectPagination'
 import { useAppState } from '@/composables/useAppState'
@@ -88,6 +89,11 @@ export function useProjectListManager(initialProps: ProjectListProps & { clients
         return params
     }
 
+    const getInertiaVersion = (): string | null => {
+        const p: any = usePage() // suivant la version, c'est un objet ou un ref
+        return p?.version ?? p?.value?.version ?? null
+    }
+
     // Méthode de chargement initial via fetch (comme le dashboard)
     const loadInitialData = async (force: boolean = false): Promise<void> => {
         // Charger seulement si pas déjà de données (éviter double chargement)
@@ -121,7 +127,7 @@ export function useProjectListManager(initialProps: ProjectListProps & { clients
                     'X-Inertia': 'true',
                     'X-Inertia-Partial-Component': 'Projects/List/Index',
                     'X-Inertia-Partial-Data': 'projectsData',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    'X-Inertia-Version': getInertiaVersion(),
                 }
             })
 
@@ -148,7 +154,7 @@ export function useProjectListManager(initialProps: ProjectListProps & { clients
                 hasStatsLoadedOnce.value = true
             }
         } catch (error) {
-            globalState.error = error instanceof Error ? error.message : 'Une erreur est survenue lors du chargement des données'
+            globalState.error = 'Une erreur est survenue lors du chargement des données'
             console.error('Erreur lors du chargement initial:', error)
         } finally {
             globalState.isLoading = false

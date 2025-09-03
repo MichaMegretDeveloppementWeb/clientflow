@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts" generic="T">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 /**
  * Composant de virtual scrolling pour optimiser les grandes listes

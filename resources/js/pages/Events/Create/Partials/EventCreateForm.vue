@@ -580,7 +580,7 @@ import { Label } from '@/components/ui/label'
 import { Link } from '@inertiajs/vue3'
 import { route } from 'ziggy-js'
 import { useEventCreateForm } from '@/composables/events/create/useEventCreateForm'
-import type { EventCreateFormData, EventCreateFormValidation, EventCreateProject } from '@/types/events/create'
+import type { EventCreateFormValidation, EventCreateProject } from '@/types/events/create'
 
 interface Props {
     projectId?: number | null
