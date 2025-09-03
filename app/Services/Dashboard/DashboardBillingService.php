@@ -2,176 +2,59 @@
 
 namespace App\Services\Dashboard;
 
-use App\Models\Event;
-use App\Enums\EventType;
-use App\Enums\EventStatus;
-use App\Enums\PaymentStatus;
-use Carbon\Carbon;
+use App\Repositories\Contracts\Dashboard\BillingRepositoryInterface;
 
 class DashboardBillingService
 {
+    public function __construct(
+        private readonly BillingRepositoryInterface $billingRepository
+    ) {}
+
     /**
      * Get billing cards data for dashboard
+     * OPTIMIZED: Repository pattern + error handling
      */
     public function getBillingCardsData(): array
     {
-        $userId = auth()->id();
+        try {
+            $userId = auth()->id();
+            $data = $this->billingRepository->getBillingStatistics($userId);
 
-        $totalSend = $this->getTotalSent($userId);
-        $totalPaid = $this->getTotalPaid($userId);
+            // Add calculated payment rate
+            $data['payment_rate'] = $this->calculatePaymentRate($data['total_sent'], $data['total_paid']);
 
-        return [
-            'total_billed' => $this->getTotalBilled($userId),
-            'total_to_send' => $this->getTotalToSend($userId),
-            'total_sent' => $totalSend,
-            'total_paid' => $totalPaid,
-            'total_overdue_payment' => $this->getTotalOverduePayment($userId),
-            'total_upcoming_payment' => $this->getTotalUpcomingPayment($userId),
-            'payment_rate' => $this->getPaymentRate($totalSend, $totalPaid),
-            'invoices_to_send_count' => $this->getInvoicesToSendCount($userId),
-            'unpaid_invoices_count' => $this->getUnpaidInvoicesCount($userId),
-            'overdue_invoices_count' => $this->getOverdueInvoicesCount($userId),
-        ];
-    }
+            return $data;
+        } catch (\Exception $e) {
+            // Log error and return default values
+            \Log::error('Error fetching billing data: '.$e->getMessage());
 
-    /**
-     * Get total billed amount (all non-cancelled billing events)
-     */
-    private function getTotalBilled(int $userId): float
-    {
-        return Event::where('event_type', EventType::Billing->value)
-            ->whereNot('status', EventStatus::Cancelled->value)
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->sum('amount') ?? 0;
-    }
-
-    /**
-     * Get total amount of invoices to send
-     */
-    private function getTotalToSend(int $userId): float
-    {
-        return Event::where('event_type', EventType::Billing->value)
-            ->where('status', EventStatus::ToSend->value)
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->sum('amount') ?? 0;
-    }
-
-    /**
-     * Get total amount of invoices to send
-     */
-    private function getTotalSent(int $userId): float
-    {
-        return Event::where('event_type', EventType::Billing->value)
-            ->where('status', EventStatus::Sent->value)
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->sum('amount') ?? 0;
-    }
-
-    /**
-     * Get total paid amount
-     */
-    private function getTotalPaid(int $userId): float
-    {
-        return Event::where('event_type', EventType::Billing->value)
-            ->where('status', EventStatus::Sent->value)
-            ->where('payment_status', PaymentStatus::Paid->value)
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->sum('amount') ?? 0;
-    }
-
-    /**
-     * Get total upcoming payment amount (sent, not yet due or no due date)
-     */
-    private function getTotalUpcomingPayment(int $userId): float
-    {
-        return Event::where('event_type', EventType::Billing->value)
-            ->where('status', EventStatus::Sent->value)
-            ->where('payment_status', PaymentStatus::Pending->value)
-            ->where(function($query) {
-                $query->where('payment_due_date', '>=', now())
-                      ->orWhereNull('payment_due_date');
-            })
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->sum('amount') ?? 0;
-    }
-
-    /**
-     * Get total overdue payment amount (sent and past due)
-     */
-    private function getTotalOverduePayment(int $userId): float
-    {
-        return Event::where('event_type', EventType::Billing->value)
-            ->where('status', EventStatus::Sent->value)
-            ->where('payment_status', PaymentStatus::Pending->value)
-            ->whereDate('payment_due_date', '<', now())
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->sum('amount') ?? 0;
+            return [
+                'total_billed' => 0.0,
+                'total_to_send' => 0.0,
+                'total_sent' => 0.0,
+                'total_paid' => 0.0,
+                'total_overdue_payment' => 0.0,
+                'total_upcoming_payment' => 0.0,
+                'payment_rate' => 0.0,
+                'invoices_to_send_count' => 0,
+                'unpaid_invoices_count' => 0,
+                'overdue_invoices_count' => 0,
+                'error' => app()->environment('local')
+                    ? $e->getMessage().' in '.$e->getFile().':'.$e->getLine()
+                    : 'Erreur lors du chargement des données de facturation.',
+            ];
+        }
     }
 
     /**
      * Calculate payment rate (paid / billed)
      */
-    private function getPaymentRate($totalSend, $totalPaid): float
+    private function calculatePaymentRate(float $totalSent, float $totalPaid): float
     {
-
-        if ($totalSend == 0) {
-            return 0;
+        if ($totalSent == 0) {
+            return 0.0;
         }
 
-        return round(($totalPaid / $totalSend) * 100, 1);
-    }
-
-    /**
-     * Get count of invoices to send
-     */
-    private function getInvoicesToSendCount(int $userId): int
-    {
-        return Event::where('event_type', EventType::Billing->value)
-            ->where('status', EventStatus::ToSend->value)
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->count();
-    }
-
-    /**
-     * Get count of unpaid invoices
-     */
-    private function getUnpaidInvoicesCount(int $userId): int
-    {
-        return Event::where('event_type', EventType::Billing->value)
-            ->where('status', EventStatus::Sent->value)
-            ->where('payment_status', PaymentStatus::Pending->value)
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->count();
-    }
-
-    /**
-     * Get count of overdue invoices (sent and past due)
-     */
-    private function getOverdueInvoicesCount(int $userId): int
-    {
-        return Event::where('event_type', EventType::Billing->value)
-            ->where('status', EventStatus::Sent->value)
-            ->where('payment_status', PaymentStatus::Pending->value)
-            ->whereDate('payment_due_date', '<', now())
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->count();
+        return round(($totalPaid / $totalSent) * 100, 1);
     }
 }

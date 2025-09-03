@@ -50,12 +50,22 @@ export function useTasks() {
       }
 
       const data: TaskApiResponse = await response.json()
+      
       if (data.urgent_tasks) {
         tasks.value = data.urgent_tasks
+        
+        // Si aucune tâche retournée mais pas d'erreur HTTP, peut indiquer un problème backend
+        if (data.urgent_tasks.length === 0 && !error.value) {
+          // En mode dev, on peut ajouter un log pour débugger
+          if (import.meta.env.DEV) {
+            console.log('No tasks returned - could be normal or indicate backend issue')
+          }
+        }
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Une erreur est survenue'
       console.error('Erreur lors du chargement des tâches urgentes:', err)
+      tasks.value = []
     } finally {
       isLoading.value = false
     }

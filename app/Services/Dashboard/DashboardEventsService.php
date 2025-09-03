@@ -2,57 +2,47 @@
 
 namespace App\Services\Dashboard;
 
-use App\Models\Event;
-use App\Enums\EventStatus;
-use App\Enums\EventType;
+use App\Repositories\Contracts\Dashboard\TasksRepositoryInterface;
 use Illuminate\Support\Collection;
 
 class DashboardEventsService
 {
+    public function __construct(
+        private readonly TasksRepositoryInterface $tasksRepository
+    ) {}
+
     /**
      * Get upcoming tasks with optional urgency filter
+     * OPTIMIZED: Repository pattern + error handling
      */
     public function getUpcomingTasks(bool $urgentOnly = false, int $limit = 100): Collection
     {
-        $userId = auth()->id();
+        try {
+            $userId = auth()->id();
 
-        $query = Event::with(['project.client'])
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->where(function ($query) use ($urgentOnly) {
-                if ($urgentOnly) {
-                    // Tâches urgentes (en retard)
-                    $query->where(function ($q) {
-                        $q->where('event_type', EventType::Step->value)
-                            ->where('status', EventStatus::Todo->value)
-                            ->whereDate('execution_date', '<', now());
-                    })
-                    ->orWhere(function ($q) {
-                        $q->where('event_type', EventType::Billing->value)
-                            ->where('status', EventStatus::ToSend->value)
-                            ->whereDate('send_date', '<', now());
-                    });
-                } else {
-                    // Toutes les tâches à venir (non terminées)
-                    $query->where(function ($q) {
-                        $q->where('event_type', EventType::Step->value)
-                            ->where('status', EventStatus::Todo->value);
-                    })
-                    ->orWhere(function ($q) {
-                        $q->where('event_type', EventType::Billing->value)
-                            ->where('status', EventStatus::ToSend->value);
-                    });
-                }
-            })
-            ->orderByRaw('
-                CASE
-                    WHEN event_type = ? THEN execution_date
-                    WHEN event_type = ? THEN send_date
-                END ASC
-            ', [EventType::Step->value, EventType::Billing->value]);
+            return $this->tasksRepository->getUpcomingTasks($userId, $urgentOnly, $limit);
+        } catch (\Exception $e) {
+            // Log error for debugging but return empty collection
+            \Log::error('Error fetching upcoming tasks: '.$e->getMessage());
 
-        return $query->get();
+            return collect([]);
+        }
+    }
+
+    /**
+     * Get urgent tasks count
+     */
+    public function getUrgentTasksCount(): int
+    {
+        try {
+            $userId = auth()->id();
+
+            return $this->tasksRepository->getUrgentTasksCount($userId);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching urgent tasks count: '.$e->getMessage());
+
+            return 0;
+        }
     }
 
     /**
@@ -62,20 +52,4 @@ class DashboardEventsService
     {
         return $this->getUpcomingTasks(true, $limit);
     }
-
-    /**
-     * Get upcoming events
-     */
-    public function getUpcomingEvents(int $limit = 10): Collection
-    {
-        $userId = auth()->id();
-        return Event::with(['project.client'])
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->upcoming()
-            ->limit($limit)
-            ->get();
-    }
-
 }

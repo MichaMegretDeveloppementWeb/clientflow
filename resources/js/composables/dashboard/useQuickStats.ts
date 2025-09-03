@@ -27,7 +27,19 @@ export function useQuickStats() {
             }
 
             const data: QuickStatsResponse = await response.json()
-            quickStats.value = data.quick_stats
+            
+            // Vérifier s'il y a une erreur dans les données retournées
+            if (data.quick_stats?.error) {
+                // Afficher l'erreur détaillée en console en mode développement
+                if (import.meta.env.DEV) {
+                    console.error('Quick Stats Backend Error:', data.quick_stats.error)
+                }
+                // Afficher une erreur générale à l'utilisateur
+                error.value = 'Impossible de charger les statistiques rapides'
+                quickStats.value = null
+            } else {
+                quickStats.value = data.quick_stats
+            }
         } catch (err) {
             console.error('Error loading quick stats:', err)
             error.value = err instanceof Error ? err.message : 'Failed to load quick stats'

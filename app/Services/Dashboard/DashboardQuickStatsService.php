@@ -4,113 +4,90 @@ declare(strict_types=1);
 
 namespace App\Services\Dashboard;
 
-use App\Models\Event;
-use App\Models\Project;
-use App\Enums\EventType;
-use App\Enums\EventStatus;
-use App\Enums\ProjectStatus;
+use App\Repositories\Contracts\Dashboard\QuickStatsRepositoryInterface;
 
 class DashboardQuickStatsService
 {
+    public function __construct(
+        private readonly QuickStatsRepositoryInterface $quickStatsRepository
+    ) {}
+
+    /**
+     * Get quick stats data with error handling
+     * OPTIMIZED: 3 queries instead of 11
+     */
     public function getQuickStats(): array
     {
-        $userId = auth()->id();
+        try {
+            $userId = auth()->id();
 
-        return [
-            'completion_rate' => $this->getCompletionRate($userId),
-            'revenue_per_client' => $this->getRevenuePerClient($userId),
-            'average_revenue_per_client' => $this->getAverageRevenuePerClient($userId),
-            'revenue_growth_rate' => $this->getRevenueGrowthRate($userId),
-            'active_projects' => $this->getActiveProjectsCount($userId),
-            'pending_invoices' => $this->getPendingInvoicesCount($userId),
-            'urgent_tasks' => $this->getUrgentTasksCount($userId),
-        ];
+            // Get all data from repository in 3 optimized queries
+            $data = $this->quickStatsRepository->getQuickStatsData($userId);
+
+            // Calculate derived metrics
+            $completionRate = $this->calculateCompletionRate($data['total_projects'], $data['completed_projects']);
+            $revenuePerClient = $this->calculateRevenuePerClient($data['total_paid_revenue'], $data['unique_clients']);
+            $averageRevenuePerClient = $this->getAverageRevenuePerClient();
+            $revenueGrowthRate = $this->calculateRevenueGrowthRate($revenuePerClient, $averageRevenuePerClient);
+
+            return [
+                'completion_rate' => $completionRate,
+                'revenue_per_client' => $revenuePerClient,
+                'average_revenue_per_client' => $averageRevenuePerClient,
+                'revenue_growth_rate' => $revenueGrowthRate,
+                'active_projects' => $data['active_projects'],
+                'pending_invoices' => $data['pending_invoices'],
+                'urgent_tasks' => $data['urgent_tasks'],
+                'error' => null,
+            ];
+        } catch (\Exception $e) {
+            // Return default values with error message
+            return [
+                'completion_rate' => 0.0,
+                'revenue_per_client' => 0.0,
+                'average_revenue_per_client' => 0.0,
+                'revenue_growth_rate' => 0.0,
+                'active_projects' => 0,
+                'pending_invoices' => 0,
+                'urgent_tasks' => 0,
+                'error' => app()->environment('local')
+                    ? $e->getMessage().' in '.$e->getFile().':'.$e->getLine()
+                    : 'Erreur lors du chargement des statistiques rapides.',
+            ];
+        }
     }
 
-    private function getCompletionRate(int $userId): float
+    private function calculateCompletionRate(int $totalProjects, int $completedProjects): float
     {
-        $totalProjects = Project::whereHas('client', function ($query) use ($userId) {
-            $query->where('user_id', $userId);
-        })->whereIn('status', [ProjectStatus::Active->value, ProjectStatus::Completed->value])
-        ->count();
-
         if ($totalProjects === 0) {
-            return 0;
+            return 0.0;
         }
-
-        $completedProjects = Project::whereHas('client', function ($query) use ($userId) {
-            $query->where('user_id', $userId);
-        })->where('status', ProjectStatus::Completed->value)
-        ->count();
 
         return ($completedProjects / $totalProjects) * 100;
     }
 
-    private function getRevenuePerClient(int $userId): float
+    private function calculateRevenuePerClient(float $totalRevenue, int $uniqueClients): float
     {
-        $totalRevenue = Event::where('event_type', EventType::Billing->value)
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->where('payment_status', 'paid')
-            ->sum('amount') ?? 0;
-
-        $totalClients = Project::whereHas('client', function ($query) use ($userId) {
-            $query->where('user_id', $userId);
-        })->distinct('client_id')->count('client_id');
-
-        if ($totalClients === 0) {
-            return 0;
+        if ($uniqueClients === 0) {
+            return 0.0;
         }
 
-        return $totalRevenue / $totalClients;
+        return $totalRevenue / $uniqueClients;
     }
 
-    private function getAverageRevenuePerClient(int $userId): float
+    private function getAverageRevenuePerClient(): float
     {
         // Pour cette démo, on utilise une valeur fixe
         // Dans un vrai système, on calculerait la moyenne historique
-        return 5000;
+        return 5000.0;
     }
 
-    private function getRevenueGrowthRate(int $userId): float
+    private function calculateRevenueGrowthRate(float $current, float $average): float
     {
-        $current = $this->getRevenuePerClient($userId);
-        $average = $this->getAverageRevenuePerClient($userId);
-
         if ($average === 0) {
-            return 0;
+            return 0.0;
         }
 
         return (($current - $average) / $average) * 100;
-    }
-
-    private function getActiveProjectsCount(int $userId): int
-    {
-        return Project::whereHas('client', function ($query) use ($userId) {
-            $query->where('user_id', $userId);
-        })->where('status', ProjectStatus::Active->value)
-        ->count();
-    }
-
-    private function getPendingInvoicesCount(int $userId): int
-    {
-        return Event::where('event_type', EventType::Billing->value)
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->where('payment_status', 'pending')
-            ->count();
-    }
-
-    private function getUrgentTasksCount(int $userId): int
-    {
-        return Event::where('event_type', EventType::Step->value)
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->where('status', EventStatus::Todo->value)
-            ->where('execution_date', '<=', now())
-            ->count();
     }
 }

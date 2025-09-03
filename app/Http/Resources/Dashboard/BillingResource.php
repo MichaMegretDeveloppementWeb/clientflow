@@ -36,7 +36,7 @@ class BillingResource extends JsonResource
                     'value' => round($this->resource['total_billed'], 2),
                     'icon' => 'calculator',
                     'color' => 'purple',
-                    'link' => route('events.index') . '?event_type=billing',
+                    'link' => route('events.index').'?event_type=billing',
                     'description' => null,
                 ],
                 [
@@ -45,7 +45,7 @@ class BillingResource extends JsonResource
                     'value' => round($this->resource['total_to_send'], 2),
                     'icon' => 'clock',
                     'color' => 'orange',
-                    'link' => route('events.index') . '?event_type=billing&status=to_send',
+                    'link' => route('events.index').'?event_type=billing&status=to_send',
                 ],
                 [
                     'id' => 'sent_details',
@@ -53,7 +53,7 @@ class BillingResource extends JsonResource
                     'value' => round($this->resource['total_sent'], 2),
                     'icon' => 'send',
                     'color' => 'blue',
-                    'link' => route('events.index') . '?event_type=billing&status=sent',
+                    'link' => route('events.index').'?event_type=billing&status=sent',
                     'description' => null,
                     'details' => [
                         'sent' => round($this->resource['total_sent'], 2),
@@ -66,6 +66,7 @@ class BillingResource extends JsonResource
                     ],
                 ],
             ],
+            'error' => $this->resource['error'] ?? null,
         ];
     }
 }

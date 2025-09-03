@@ -2,24 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Client;
-use App\Models\User;
-use App\Services\Dashboard\DashboardActivitiesService;
-use App\Services\Dashboard\DashboardEventsService;
-use App\Services\Dashboard\DashboardService;
-use App\Services\Dashboard\DashboardRevenueService;
-use App\Services\Dashboard\DashboardStatisticsService;
-use App\Services\Dashboard\DashboardBillingService;
-use App\Services\Dashboard\DashboardQuickStatsService;
-use App\Services\Dashboard\DashboardHelpService;
-use App\DTOs\DashboardDTO;
-use App\Http\Resources\Dashboard\TaskResource;
 use App\Http\Resources\Dashboard\ActivityResource;
+use App\Http\Resources\Dashboard\BillingResource;
+use App\Http\Resources\Dashboard\HelpResource;
+use App\Http\Resources\Dashboard\QuickStatsResource;
 use App\Http\Resources\Dashboard\RevenueResource;
 use App\Http\Resources\Dashboard\StatisticsResource;
-use App\Http\Resources\Dashboard\BillingResource;
-use App\Http\Resources\Dashboard\QuickStatsResource;
-use App\Http\Resources\Dashboard\HelpResource;
+use App\Http\Resources\Dashboard\TaskResource;
+use App\Services\Dashboard\DashboardActivitiesService;
+use App\Services\Dashboard\DashboardBillingService;
+use App\Services\Dashboard\DashboardEventsService;
+use App\Services\Dashboard\DashboardHelpService;
+use App\Services\Dashboard\DashboardQuickStatsService;
+use App\Services\Dashboard\DashboardRevenueService;
+use App\Services\Dashboard\DashboardStatisticsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -42,21 +38,17 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard/Index');
     }
 
-
     public function urgentTasks(Request $request): JsonResponse
     {
-
-        // Récupérer le paramètre pour filtrer les tâches urgentes uniquement
         $urgentOnly = $request->boolean('urgent_only', false);
 
-        // Récupérer les tâches à venir (avec filtre optionnel pour urgentes)
+        // Le service gère les erreurs et retourne une collection (vide si erreur)
         $tasks = $this->eventsService->getUpcomingTasks($urgentOnly);
 
         return TaskResource::collection($tasks)->response()->setData([
-            'urgent_tasks' => TaskResource::collection($tasks)
+            'urgent_tasks' => TaskResource::collection($tasks),
         ]);
     }
-
 
     public function recentActivities(): JsonResponse
     {
@@ -64,56 +56,54 @@ class DashboardController extends Controller
         $activities = $this->activitiesService->getRecentActivities();
 
         return ActivityResource::collection($activities)->response()->setData([
-            'recent_activities' => ActivityResource::collection($activities)
+            'recent_activities' => ActivityResource::collection($activities),
         ]);
     }
-
 
     public function statistics(): JsonResponse
     {
-        // Récupérer les statistiques du dashboard
-        $statistics = $this->statisticsService->getStatistics();
+        // Récupérer les statistiques de base pour StatsGrid
+        $statistics = $this->statisticsService->getBasicStatistics();
 
         return (new StatisticsResource($statistics))->response()->setData([
-            'statistics' => new StatisticsResource($statistics)
+            'statistics' => new StatisticsResource($statistics),
         ]);
     }
-
 
     public function billing(): JsonResponse
     {
-        // Récupérer les données de facturation
+        // Le service gère le try-catch et retourne soit les données soit une structure d'erreur
         $billingData = $this->billingService->getBillingCardsData();
 
         return (new BillingResource($billingData))->response()->setData([
-            'billing' => new BillingResource($billingData)
+            'billing' => new BillingResource($billingData),
+            'error' => $billingData['error'] ?? null,
         ]);
     }
-
 
     public function revenueChart(Request $request): JsonResponse
     {
         $period = $request->get('period', 'current_month');
 
-        // Utiliser le service de revenue pour obtenir les données du graphique
+        // Le service gère le try-catch et retourne soit les données soit une structure d'erreur
         $chartData = $this->revenueService->getRevenueChartData($period);
 
         return (new RevenueResource($chartData))->response()->setData([
-            'revenue_chart' => new RevenueResource($chartData)
+            'revenue_chart' => new RevenueResource($chartData),
+            'error' => $chartData['error'] ?? null,
         ]);
     }
-
 
     public function quickStats(): JsonResponse
     {
-        // Récupérer les statistiques rapides
+        // Le service gère le try-catch et retourne soit les données soit une structure d'erreur
         $quickStats = $this->quickStatsService->getQuickStats();
 
         return (new QuickStatsResource($quickStats))->response()->setData([
-            'quick_stats' => new QuickStatsResource($quickStats)
+            'quick_stats' => new QuickStatsResource($quickStats),
+            'error' => $quickStats['error'] ?? null,
         ]);
     }
-
 
     public function help(): JsonResponse
     {
@@ -121,8 +111,7 @@ class DashboardController extends Controller
         $helpData = $this->helpService->getHelpData();
 
         return (new HelpResource($helpData))->response()->setData([
-            'help' => new HelpResource($helpData)
+            'help' => new HelpResource($helpData),
         ]);
     }
-
 }

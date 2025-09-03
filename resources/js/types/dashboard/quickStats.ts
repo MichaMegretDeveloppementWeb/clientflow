@@ -26,6 +26,7 @@ export interface QuickStats {
         pending_invoices: QuickStatsMetric
         urgent_tasks: QuickStatsMetric
     }
+    error?: string | null
 }
 
 export interface QuickStatsResponse {

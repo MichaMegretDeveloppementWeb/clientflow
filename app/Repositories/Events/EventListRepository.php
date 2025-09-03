@@ -4,18 +4,24 @@ namespace App\Repositories\Events;
 
 use App\Enums\EventType;
 use App\Enums\PaymentStatus;
-use App\Models\Event;
 use App\Models\Client;
+use App\Models\Event;
 use App\Models\Project;
 use App\Repositories\Contracts\Events\EventListRepositoryInterface;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Builder;
 
 class EventListRepository implements EventListRepositoryInterface
 {
     public function paginate(int $perPage, array $filters = []): LengthAwarePaginator
     {
-        $query = Event::withOptimizedRelations();
+        // Requête optimisée : 1 seule requête avec toutes les relations
+        $query = Event::select([
+            'events.*',
+        ])
+            ->with([
+                'project:id,name,client_id,status,budget',
+                'project.client:id,name,company,email',
+            ]);
 
         // Apply filters
         $query = $this->applyFilters($query, $filters);
@@ -28,7 +34,6 @@ class EventListRepository implements EventListRepositoryInterface
 
         return $query->paginate($perPage);
     }
-
 
     /**
      * Get global statistics (suivant le pattern des autres repositories)
@@ -58,12 +63,12 @@ class EventListRepository implements EventListRepositoryInterface
     private function applyFilters($query, array $filters)
     {
         // Filter by event type
-        if (!empty($filters['event_type'])) {
+        if (! empty($filters['event_type'])) {
             $query->where('event_type', $filters['event_type']);
         }
 
         // Filter by status
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             if ($filters['status'] === 'todo') {
                 // "À faire" inclut todo + to_send (cohérent avec les stats)
                 $query->whereIn('status', ['todo', 'to_send']);
@@ -79,7 +84,7 @@ class EventListRepository implements EventListRepositoryInterface
         }
 
         // Filter by payment status
-        if (!empty($filters['payment_status'])) {
+        if (! empty($filters['payment_status'])) {
             if ($filters['payment_status'] === 'overdue') {
                 $query->paymentOverdue();
             } else {
@@ -88,20 +93,20 @@ class EventListRepository implements EventListRepositoryInterface
         }
 
         // Filter by project
-        if (!empty($filters['project_id'])) {
+        if (! empty($filters['project_id'])) {
             $query->where('project_id', $filters['project_id']);
         }
 
         // Filter by client
-        if (!empty($filters['client_id'])) {
+        if (! empty($filters['client_id'])) {
             $query->whereHas('project', function ($q) use ($filters) {
                 $q->where('client_id', $filters['client_id']);
             });
         }
 
         // Filter by search term
-        if (!empty($filters['search'])) {
-            $searchTerm = '%' . $filters['search'] . '%';
+        if (! empty($filters['search'])) {
+            $searchTerm = '%'.$filters['search'].'%';
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('name', 'like', $searchTerm)
                     ->orWhere('description', 'like', $searchTerm)
@@ -116,7 +121,6 @@ class EventListRepository implements EventListRepositoryInterface
             });
         }
 
-
         // Filter payment overdue events (billing events only)
         if (isset($filters['payment_overdue']) &&
             ($filters['payment_overdue'] === true || $filters['payment_overdue'] === 'true' || $filters['payment_overdue'] === '1')) {
@@ -128,7 +132,6 @@ class EventListRepository implements EventListRepositoryInterface
         return $query;
     }
 
-
     /**
      * Apply sorting to query
      */
@@ -137,13 +140,13 @@ class EventListRepository implements EventListRepositoryInterface
         switch ($sortBy) {
             case 'due_date':
                 // Tri par date d'échéance (execution_date pour steps, send_date pour billing)
-                $query->orderByRaw('COALESCE(execution_date, send_date) ' . $sortOrder);
+                $query->orderByRaw('COALESCE(execution_date, send_date) '.$sortOrder);
                 break;
 
             case 'execution_date':
             case 'send_date':
                 // Anciens filtres - rediriger vers due_date pour compatibilité
-                $query->orderByRaw('COALESCE(execution_date, send_date) ' . $sortOrder);
+                $query->orderByRaw('COALESCE(execution_date, send_date) '.$sortOrder);
                 break;
 
             case 'name':
@@ -157,7 +160,7 @@ class EventListRepository implements EventListRepositoryInterface
 
             case 'amount':
                 // Tri par montant (seulement pour les facturations, les autres à la fin)
-                $query->orderByRaw('amount IS NULL, amount ' . $sortOrder);
+                $query->orderByRaw('amount IS NULL, amount '.$sortOrder);
                 break;
 
             default:
@@ -178,7 +181,7 @@ class EventListRepository implements EventListRepositoryInterface
             ->map(function ($client) {
                 return [
                     'id' => $client->id,
-                    'name' => $client->company ? $client->name . ' (' . $client->company . ')' : $client->name
+                    'name' => $client->company ? $client->name.' ('.$client->company.')' : $client->name,
                 ];
             })
             ->toArray();
@@ -193,7 +196,7 @@ class EventListRepository implements EventListRepositoryInterface
                 return [
                     'id' => $project->id,
                     'name' => $project->name,
-                    'client_id' => $project->client_id
+                    'client_id' => $project->client_id,
                 ];
             })
             ->toArray();

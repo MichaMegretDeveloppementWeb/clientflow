@@ -41,7 +41,7 @@ class ClientListService
                     'last_page' => 1,
                     'per_page' => $perPage,
                     'total' => 0,
-                ]
+                ],
             ],
             'stats' => [
                 'total' => 0,
@@ -66,7 +66,7 @@ class ClientListService
 
             return [
                 'clients' => [
-                    'data' => $clients->getCollection()->map(function($client) {
+                    'data' => $clients->getCollection()->map(function ($client) {
                         return [
                             'id' => $client->id,
                             'name' => $client->name,
@@ -75,11 +75,17 @@ class ClientListService
                             'phone' => $client->phone,
                             'address' => $client->address,
                             'notes' => $client->notes,
-                            'projects_count' => $client->projects_count ?? 0,
-                            'active_projects_count' => $client->active_projects_count ?? 0,
-                            'total_revenue' => $client->total_revenue ?? 0,
-                            'pending_amount' => $client->pending_amount ?? 0,
-                            'has_overdue_payments' => $client->has_overdue_payments ?? false,
+                            'projects_count' => $client->getAttribute('projects_count') ?? 0,
+                            'active_projects_count' => $client->getAttribute('active_projects_count') ?? 0,
+                            'total_revenue' => $client->getAttribute('total_revenue') ?? 0,
+                            'pending_amount' => $client->getAttribute('pending_amount') ?? 0,
+                            'has_overdue_payments' => $client->getAttribute('has_overdue_payments') ?? false,
+                            'latest_project' => $client->latest_project ? [
+                                'id' => $client->latest_project->id,
+                                'name' => $client->latest_project->name,
+                                'status' => $client->latest_project->status,
+                                'created_at' => $client->latest_project->created_at?->toISOString(),
+                            ] : null,
                             'created_at' => $client->created_at?->toISOString(),
                             'updated_at' => $client->updated_at?->toISOString(),
                         ];
@@ -90,14 +96,14 @@ class ClientListService
                         'last_page' => $clients->lastPage(),
                         'per_page' => $clients->perPage(),
                         'total' => $clients->total(),
-                    ]
+                    ],
                 ],
                 'stats' => $stats,
-                'filters' => $filters
+                'filters' => $filters,
             ];
 
-        }catch (\Exception $e) {
-            throw new \Exception("Erreurs lors du chargement des données.");
+        } catch (\Exception $e) {
+            throw new \Exception('Erreurs lors du chargement des données.');
         }
 
     }

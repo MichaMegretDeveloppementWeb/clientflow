@@ -9,12 +9,9 @@ export function useStatistics() {
 
     const hasStatistics = computed(() => statistics.value !== null)
 
+    // Only computed values for data that actually exists in our optimized response
     const clientsTotal = computed(() => statistics.value?.clients.total ?? 0)
     const activeProjects = computed(() => statistics.value?.projects.active ?? 0)
-    const pendingTasks = computed(() => statistics.value?.tasks.pending ?? 0)
-    const monthlyRevenue = computed(() => statistics.value?.revenue.monthly ?? 0)
-    const unpaidInvoices = computed(() => statistics.value?.invoices.unpaid ?? 0)
-    const completionRate = computed(() => statistics.value?.tasks.completion_rate ?? 0)
 
     const loadStatistics = async (): Promise<void> => {
         isLoading.value = true
@@ -88,10 +85,6 @@ export function useStatistics() {
         hasStatistics,
         clientsTotal,
         activeProjects,
-        pendingTasks,
-        monthlyRevenue,
-        unpaidInvoices,
-        completionRate,
         loadStatistics,
         refreshStatistics,
         formatCurrency,

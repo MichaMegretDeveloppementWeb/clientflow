@@ -15,6 +15,7 @@ export interface RevenueChartData {
     start_date?: string | null
     end_date?: string | null
     chart_options?: Record<string, any>
+    error?: string | null
 }
 
 export interface RevenueChartResponse {

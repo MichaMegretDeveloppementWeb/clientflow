@@ -2,219 +2,128 @@
 
 namespace App\Services\Dashboard;
 
-use App\Models\Event;
-use App\Enums\EventType;
-use App\Enums\PaymentStatus;
+use App\Repositories\Contracts\Dashboard\RevenueChartRepositoryInterface;
 use Carbon\Carbon;
 
 class DashboardRevenueService
 {
+    public function __construct(
+        private readonly RevenueChartRepositoryInterface $revenueChartRepository
+    ) {}
+
     /**
      * Get revenue data for chart with flexible period
      */
     public function getRevenueChartData(string $period = 'current_month'): array
     {
-        $userId = auth()->id();
+        try {
+            $userId = auth()->id();
 
-        // Déterminer les dates de début et fin selon la période
-        [$startDate, $endDate, $granularity] = $this->getPeriodDates($period);
+            // Déterminer les dates de début et fin selon la période
+            [$startDate, $endDate, $granularity] = $this->getPeriodDates($period);
 
-        // Récupérer les données selon la granularité
-        if ($granularity === 'day') {
-            $revenueData = $this->getDailyRevenue($startDate, $endDate, $userId);
-            $projectedData = $this->getDailyProjected($startDate, $endDate, $userId);
-            $labels = $this->generateDayLabels($startDate, $endDate);
-        } elseif ($granularity === 'week') {
-            $revenueData = $this->getWeeklyRevenue($startDate, $endDate, $userId);
-            $projectedData = $this->getWeeklyProjected($startDate, $endDate, $userId);
-            $labels = $this->generateWeekLabels($startDate, $endDate);
-        } else {
-            $revenueData = $this->getMonthlyRevenueForPeriod($startDate, $endDate, $userId);
-            $projectedData = $this->getMonthlyProjectedForPeriod($startDate, $endDate, $userId);
-            $labels = $this->generateMonthLabelsForPeriod($startDate, $endDate);
+            // OPTIMIZED: Use repository to get both revenue and projected data
+            if ($granularity === 'day') {
+                [$revenueData, $projectedData] = $this->revenueChartRepository->getDailyRevenueAndProjected($startDate, $endDate, $userId);
+                $labels = $this->generateDayLabels($startDate, $endDate);
+            } elseif ($granularity === 'week') {
+                [$revenueData, $projectedData] = $this->revenueChartRepository->getWeeklyRevenueAndProjected($startDate, $endDate, $userId);
+                $labels = $this->generateWeekLabels($startDate, $endDate);
+            } else {
+                [$revenueData, $projectedData] = $this->revenueChartRepository->getMonthlyRevenueAndProjected($startDate, $endDate, $userId);
+                $labels = $this->generateMonthLabelsForPeriod($startDate, $endDate);
+            }
+
+            return [
+                'labels' => $labels,
+                'datasets' => [
+                    [
+                        'label' => 'Revenus réels',
+                        'data' => $revenueData,
+                        'borderColor' => 'rgb(34, 197, 94)',
+                        'backgroundColor' => 'rgba(34, 197, 94, 0.1)',
+                        'tension' => 0.3,
+                    ],
+                    [
+                        'label' => 'Facturé',
+                        'data' => $projectedData,
+                        'borderColor' => 'rgb(59, 130, 246)',
+                        'backgroundColor' => 'rgba(59, 130, 246, 0.1)',
+                        'tension' => 0.3,
+                    ],
+                ],
+                'granularity' => $granularity,
+                'period' => $period,
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date' => $endDate->format('Y-m-d'),
+                'error' => null,
+            ];
+        } catch (\Exception $e) {
+            // Structure d'erreur cohérente pour le frontend
+            return [
+                'labels' => [],
+                'datasets' => [],
+                'granularity' => 'month',
+                'period' => $period,
+                'start_date' => null,
+                'end_date' => null,
+                'error' => app()->environment('local')
+                    ? $e->getMessage().' in '.$e->getFile().':'.$e->getLine()
+                    : 'Une erreur est survenue lors du chargement des données de revenus.',
+            ];
         }
-
-        return [
-            'labels' => $labels,
-            'datasets' => [
-                [
-                    'label' => 'Revenus réels',
-                    'data' => $revenueData,
-                    'borderColor' => 'rgb(34, 197, 94)',
-                    'backgroundColor' => 'rgba(34, 197, 94, 0.1)',
-                    'tension' => 0.3,
-                ],
-                [
-                    'label' => 'Facturé',
-                    'data' => $projectedData,
-                    'borderColor' => 'rgb(59, 130, 246)',
-                    'backgroundColor' => 'rgba(59, 130, 246, 0.1)',
-                    'tension' => 0.3,
-                ],
-            ],
-            'granularity' => $granularity,
-            'period' => $period,
-            'start_date' => $startDate->format('Y-m-d'),
-            'end_date' => $endDate->format('Y-m-d'),
-        ];
     }
 
     /**
      * Get monthly revenue statistics
+     * OPTIMIZED: Single query instead of two separate queries
      */
     public function getMonthlyRevenueStats(): array
     {
-        $userId = auth()->id();
-        $currentMonth = now()->startOfMonth();
-        $lastMonth = now()->subMonth()->startOfMonth();
+        try {
+            $userId = auth()->id();
+            $currentMonth = now()->startOfMonth();
+            $lastMonth = now()->subMonth()->startOfMonth();
+            $lastMonthEnd = $lastMonth->copy()->endOfMonth();
 
-        $currentRevenue = $this->getRevenueForPeriod($currentMonth, now(), $userId);
-        $lastRevenue = $this->getRevenueForPeriod($lastMonth, $lastMonth->copy()->endOfMonth(), $userId);
-
-        $growth = $lastRevenue > 0
-            ? round((($currentRevenue - $lastRevenue) / $lastRevenue) * 100, 1)
-            : 0;
-
-        return [
-            'current_month' => $currentRevenue,
-            'last_month' => $lastRevenue,
-            'growth_percentage' => $growth,
-            'is_positive' => $growth >= 0,
-        ];
+            // Use repository for monthly revenue statistics
+            return $this->revenueChartRepository->getMonthlyRevenueStats($currentMonth, $lastMonth, $lastMonthEnd, $userId);
+        } catch (\Exception $e) {
+            return [
+                'current_month' => 0.0,
+                'last_month' => 0.0,
+                'growth_percentage' => 0,
+                'is_positive' => false,
+                'error' => app()->environment('local')
+                    ? $e->getMessage().' in '.$e->getFile().':'.$e->getLine()
+                    : 'Erreur lors du chargement des statistiques mensuelles.',
+            ];
+        }
     }
 
     /**
      * Get yearly revenue summary
+     * OPTIMIZED: Single query instead of four separate queries
      */
     public function getYearlyRevenueSummary(): array
     {
-        $userId = auth()->id();
-        $yearStart = now()->startOfYear();
+        try {
+            $userId = auth()->id();
+            $yearStart = now()->startOfYear();
 
-        return [
-            'total_revenue' => $this->getRevenueForPeriod($yearStart, now(), $userId),
-            'total_invoiced' => $this->getInvoicedForPeriod($yearStart, now(), $userId),
-            'total_pending' => $this->getPendingForPeriod($yearStart, now(), $userId),
-            'average_monthly' => $this->getAverageMonthlyRevenue($userId),
-        ];
-    }
-
-    /**
-     * Get monthly revenue data
-     */
-    private function getMonthlyRevenue(Carbon $startDate, int $months, int $userId): array
-    {
-        $data = [];
-
-        for ($i = 0; $i < $months; $i++) {
-            $monthStart = $startDate->copy()->addMonths($i)->startOfMonth();
-            $monthEnd = $monthStart->copy()->endOfMonth();
-
-            $revenue = Event::where('event_type', EventType::Billing->value)
-                ->where('payment_status', PaymentStatus::Paid->value)
-                ->whereBetween('paid_at', [$monthStart, $monthEnd])
-                ->whereHas('project.client', function ($query) use ($userId) {
-                    $query->where('user_id', $userId);
-                })
-                ->sum('amount');
-
-            $data[] = round($revenue, 2);
+            // Use repository for yearly revenue summary
+            return $this->revenueChartRepository->getYearlyRevenueSummary($yearStart, $userId);
+        } catch (\Exception $e) {
+            return [
+                'total_revenue' => 0.0,
+                'total_invoiced' => 0.0,
+                'total_pending' => 0.0,
+                'average_monthly' => 0.0,
+                'error' => app()->environment('local')
+                    ? $e->getMessage().' in '.$e->getFile().':'.$e->getLine()
+                    : 'Erreur lors du chargement du résumé annuel.',
+            ];
         }
-
-        return $data;
-    }
-
-    /**
-     * Get monthly projected/invoiced data (factures envoyées uniquement)
-     */
-    private function getMonthlyProjected(Carbon $startDate, int $months, int $userId): array
-    {
-        $data = [];
-
-        for ($i = 0; $i < $months; $i++) {
-            $monthStart = $startDate->copy()->addMonths($i)->startOfMonth();
-            $monthEnd = $monthStart->copy()->endOfMonth();
-
-            $invoiced = Event::where('event_type', EventType::Billing->value)
-                ->where('status', 'sent')
-                ->whereBetween('send_date', [$monthStart, $monthEnd])
-                ->whereHas('project.client', function ($query) use ($userId) {
-                    $query->where('user_id', $userId);
-                })
-                ->sum('amount');
-
-            $data[] = round($invoiced, 2);
-        }
-
-        return $data;
-    }
-
-    /**
-     * Generate month labels for chart
-     */
-    private function generateMonthLabels(int $months): array
-    {
-        $labels = [];
-        $startDate = now()->subMonths($months - 1);
-
-        for ($i = 0; $i < $months; $i++) {
-            $labels[] = $startDate->copy()->addMonths($i)->format('M Y');
-        }
-
-        return $labels;
-    }
-
-    /**
-     * Get revenue for a specific period
-     */
-    private function getRevenueForPeriod(Carbon $start, Carbon $end, int $userId): float
-    {
-        return Event::where('event_type', EventType::Billing->value)
-            ->where('payment_status', PaymentStatus::Paid->value)
-            ->whereBetween('paid_at', [$start, $end])
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->sum('amount');
-    }
-
-    /**
-     * Get invoiced amount for a specific period (factures envoyées uniquement)
-     */
-    private function getInvoicedForPeriod(Carbon $start, Carbon $end, int $userId): float
-    {
-        return Event::where('event_type', EventType::Billing->value)
-            ->where('status', 'sent')
-            ->whereBetween('send_date', [$start, $end])
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->sum('amount');
-    }
-
-    /**
-     * Get pending amount for a specific period
-     */
-    private function getPendingForPeriod(Carbon $start, Carbon $end, int $userId): float
-    {
-        return Event::where('event_type', EventType::Billing->value)
-            ->where('payment_status', PaymentStatus::Pending->value)
-            ->whereBetween('send_date', [$start, $end])
-            ->whereHas('project.client', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
-            ->sum('amount');
-    }
-
-    /**
-     * Calculate average monthly revenue
-     */
-    private function getAverageMonthlyRevenue(int $userId): float
-    {
-        $months = now()->month;
-        $yearRevenue = $this->getRevenueForPeriod(now()->startOfYear(), now(), $userId);
-
-        return $months > 0 ? round($yearRevenue / $months, 2) : 0;
     }
 
     /**
@@ -257,15 +166,9 @@ class DashboardRevenueService
                 break;
 
             case 'all':
-                // Trouver la première facture
-                $firstEvent = Event::where('event_type', EventType::Billing->value)
-                    ->whereHas('project.client', function ($query) {
-                        $query->where('user_id', auth()->id());
-                    })
-                    ->orderBy('created_date', 'asc')
-                    ->first();
-
-                $startDate = $firstEvent ? Carbon::parse($firstEvent->created_date)->startOfDay() : now()->subYear()->startOfDay();
+                // Utiliser le repository pour trouver la première facture
+                $firstEventDate = $this->revenueChartRepository->getFirstBillingEventDate(auth()->id());
+                $startDate = $firstEventDate ? $firstEventDate->startOfDay() : now()->subYear()->startOfDay();
 
                 // Déterminer la granularité selon la durée
                 $monthsDiff = $startDate->diffInMonths($endDate);
@@ -287,188 +190,6 @@ class DashboardRevenueService
     }
 
     /**
-     * Get daily revenue data
-     */
-    private function getDailyRevenue(Carbon $startDate, Carbon $endDate, int $userId): array
-    {
-        $data = [];
-        $totalDays = $startDate->diffInDays($endDate) + 1;
-
-        for ($i = 0; $i < $totalDays; $i++) {
-            $currentDate = $startDate->copy()->addDays($i);
-            $dayStart = $currentDate->copy()->startOfDay();
-            $dayEnd = $currentDate->copy()->endOfDay();
-
-            $revenue = Event::where('event_type', EventType::Billing->value)
-                ->where('payment_status', PaymentStatus::Paid->value)
-                ->whereBetween('paid_at', [$dayStart, $dayEnd])
-                ->whereHas('project.client', function ($query) use ($userId) {
-                    $query->where('user_id', $userId);
-                })
-                ->sum('amount');
-
-            $data[] = round($revenue, 2);
-        }
-
-        return $data;
-    }
-
-    /**
-     * Get daily projected data
-     */
-    private function getDailyProjected(Carbon $startDate, Carbon $endDate, int $userId): array
-    {
-        $data = [];
-        $totalDays = $startDate->diffInDays($endDate) + 1;
-
-        for ($i = 0; $i < $totalDays; $i++) {
-            $currentDate = $startDate->copy()->addDays($i);
-            $dayStart = $currentDate->copy()->startOfDay();
-            $dayEnd = $currentDate->copy()->endOfDay();
-
-            $invoiced = Event::where('event_type', EventType::Billing->value)
-                ->where('status', 'sent')
-                ->whereBetween('send_date', [$dayStart, $dayEnd])
-                ->whereHas('project.client', function ($query) use ($userId) {
-                    $query->where('user_id', $userId);
-                })
-                ->sum('amount');
-
-            $data[] = round($invoiced, 2);
-        }
-
-        return $data;
-    }
-
-    /**
-     * Get weekly revenue data
-     */
-    private function getWeeklyRevenue(Carbon $startDate, Carbon $endDate, int $userId): array
-    {
-        $data = [];
-        $currentDate = $startDate->copy()->startOfWeek();
-
-        while ($currentDate <= $endDate) {
-            $weekStart = $currentDate->copy();
-            $weekEnd = $currentDate->copy()->endOfWeek();
-
-            // Ne pas dépasser la date de fin
-            if ($weekEnd > $endDate) {
-                $weekEnd = $endDate->copy();
-            }
-
-            $revenue = Event::where('event_type', EventType::Billing->value)
-                ->where('payment_status', PaymentStatus::Paid->value)
-                ->whereBetween('paid_at', [$weekStart, $weekEnd])
-                ->whereHas('project.client', function ($query) use ($userId) {
-                    $query->where('user_id', $userId);
-                })
-                ->sum('amount');
-
-            $data[] = round($revenue, 2);
-            $currentDate->addWeek();
-        }
-
-        return $data;
-    }
-
-    /**
-     * Get weekly projected data
-     */
-    private function getWeeklyProjected(Carbon $startDate, Carbon $endDate, int $userId): array
-    {
-        $data = [];
-        $currentDate = $startDate->copy()->startOfWeek();
-
-        while ($currentDate <= $endDate) {
-            $weekStart = $currentDate->copy();
-            $weekEnd = $currentDate->copy()->endOfWeek();
-
-            // Ne pas dépasser la date de fin
-            if ($weekEnd > $endDate) {
-                $weekEnd = $endDate->copy();
-            }
-
-            $invoiced = Event::where('event_type', EventType::Billing->value)
-                ->where('status', 'sent')
-                ->whereBetween('send_date', [$weekStart, $weekEnd])
-                ->whereHas('project.client', function ($query) use ($userId) {
-                    $query->where('user_id', $userId);
-                })
-                ->sum('amount');
-
-            $data[] = round($invoiced, 2);
-            $currentDate->addWeek();
-        }
-
-        return $data;
-    }
-
-    /**
-     * Get monthly revenue for a specific period
-     */
-    private function getMonthlyRevenueForPeriod(Carbon $startDate, Carbon $endDate, int $userId): array
-    {
-        $data = [];
-        $currentDate = $startDate->copy()->startOfMonth();
-
-        while ($currentDate <= $endDate) {
-            $monthStart = $currentDate->copy();
-            $monthEnd = $currentDate->copy()->endOfMonth();
-
-            // Ne pas dépasser la date de fin
-            if ($monthEnd > $endDate) {
-                $monthEnd = $endDate->copy();
-            }
-
-            $revenue = Event::where('event_type', EventType::Billing->value)
-                ->where('payment_status', PaymentStatus::Paid->value)
-                ->whereBetween('paid_at', [$monthStart, $monthEnd])
-                ->whereHas('project.client', function ($query) use ($userId) {
-                    $query->where('user_id', $userId);
-                })
-                ->sum('amount');
-
-            $data[] = round($revenue, 2);
-            $currentDate->addMonth();
-        }
-
-        return $data;
-    }
-
-    /**
-     * Get monthly projected for a specific period
-     */
-    private function getMonthlyProjectedForPeriod(Carbon $startDate, Carbon $endDate, int $userId): array
-    {
-        $data = [];
-        $currentDate = $startDate->copy()->startOfMonth();
-
-        while ($currentDate <= $endDate) {
-            $monthStart = $currentDate->copy();
-            $monthEnd = $currentDate->copy()->endOfMonth();
-
-            // Ne pas dépasser la date de fin
-            if ($monthEnd > $endDate) {
-                $monthEnd = $endDate->copy();
-            }
-
-            $invoiced = Event::where('event_type', EventType::Billing->value)
-                ->where('status', 'sent')
-                ->whereBetween('send_date', [$monthStart, $monthEnd])
-                ->whereHas('project.client', function ($query) use ($userId) {
-                    $query->where('user_id', $userId);
-                })
-                ->sum('amount');
-
-            $data[] = round($invoiced, 2);
-            $currentDate->addMonth();
-        }
-
-        return $data;
-    }
-
-    /**
      * Generate day labels (only first and last)
      */
     private function generateDayLabels(Carbon $startDate, Carbon $endDate): array
@@ -479,7 +200,7 @@ class DashboardRevenueService
         $currentDate = $startDate->copy();
 
         while ($currentDate <= $endDate) {
-            $labels[] = ($currentDate->format('d/m/Y') == $startDate->format('d/m/Y') || $currentDate->format('d/m/Y') == $endDate->format('d/m/Y')) ? $currentDate->format('d/m') : "";
+            $labels[] = ($currentDate->format('d/m/Y') == $startDate->format('d/m/Y') || $currentDate->format('d/m/Y') == $endDate->format('d/m/Y')) ? $currentDate->format('d/m') : '';
             $currentDate->addDay();
         }
 
@@ -497,7 +218,7 @@ class DashboardRevenueService
         $currentDate = $startDate->copy();
 
         while ($currentDate <= $endDate) {
-            $labels[] = ($currentDate->format('d/m/Y') == $startDate->format('d/m/Y') || $currentDate->format('d/m/Y') == $endDate->format('d/m/Y')) ? $currentDate->format('d/m') : "";
+            $labels[] = ($currentDate->format('d/m/Y') == $startDate->format('d/m/Y') || $currentDate->format('d/m/Y') == $endDate->format('d/m/Y')) ? $currentDate->format('d/m') : '';
             $currentDate->addWeek();
         }
 

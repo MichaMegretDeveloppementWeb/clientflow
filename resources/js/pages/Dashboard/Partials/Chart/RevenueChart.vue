@@ -70,17 +70,6 @@
 
             <!-- Statistiques simplifiées -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white border border-gray-200 rounded-lg p-6 transition-shadow">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-600">Total revenus</p>
-                            <p class="text-2xl font-bold text-gray-900 mt-1">{{ formatCurrency(getTotalRevenue) }}</p>
-                        </div>
-                        <div class="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center">
-                            <Icon name="trending-up" class="h-5 w-5 text-green-600" />
-                        </div>
-                    </div>
-                </div>
 
                 <div class="bg-white border border-gray-200 rounded-lg p-6 transition-shadow">
                     <div class="flex items-center justify-between">
@@ -90,6 +79,18 @@
                         </div>
                         <div class="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
                             <Icon name="calculator" class="h-5 w-5 text-blue-600" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-lg p-6 transition-shadow">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total revenus</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1">{{ formatCurrency(getTotalRevenue) }}</p>
+                        </div>
+                        <div class="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <Icon name="trending-up" class="h-5 w-5 text-green-600" />
                         </div>
                     </div>
                 </div>
@@ -111,27 +112,6 @@
             <div class="bg-white border border-gray-200 rounded-lg">
                 <!-- Légende avec bonnes couleurs -->
                 <div class="flex items-center justify-center gap-4 p-4 border-b border-gray-200">
-                    <button
-                        @click="toggleDatasetVisibility('revenus')"
-                        :class="[
-                            'inline-flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200 text-sm font-medium',
-                            datasetVisibility.revenus
-                                ? 'bg-green-50 border-green-200 text-green-700 shadow-sm hover:bg-green-100'
-                                : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
-                        ]"
-                    >
-                        <div
-                            :class="[
-                                'w-3 h-3 rounded-full transition-all duration-200',
-                                datasetVisibility.revenus ? 'bg-green-500 ring-2 ring-green-200' : 'bg-gray-300'
-                            ]"
-                        ></div>
-                        <span>Revenus réels</span>
-                        <Icon
-                            :name="datasetVisibility.revenus ? 'eye' : 'eye-off'"
-                            class="w-4 h-4 opacity-70"
-                        />
-                    </button>
 
                     <button
                         @click="toggleDatasetVisibility('facture')"
@@ -154,6 +134,29 @@
                             class="w-4 h-4 opacity-70"
                         />
                     </button>
+
+                    <button
+                        @click="toggleDatasetVisibility('revenus')"
+                        :class="[
+                            'inline-flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200 text-sm font-medium',
+                            datasetVisibility.revenus
+                                ? 'bg-green-50 border-green-200 text-green-700 shadow-sm hover:bg-green-100'
+                                : 'bg-gray-50 border-gray-200 text-gray-400 hover:bg-gray-100'
+                        ]"
+                    >
+                        <div
+                            :class="[
+                                'w-3 h-3 rounded-full transition-all duration-200',
+                                datasetVisibility.revenus ? 'bg-green-500 ring-2 ring-green-200' : 'bg-gray-300'
+                            ]"
+                        ></div>
+                        <span>Revenus réels</span>
+                        <Icon
+                            :name="datasetVisibility.revenus ? 'eye' : 'eye-off'"
+                            class="w-4 h-4 opacity-70"
+                        />
+                    </button>
+
                 </div>
 
                 <div class="relative h-80 p-4">
@@ -232,19 +235,15 @@ const loadChartJs = async () => {
 
 // Composable
 const {
-    chartData,
     isLoading,
     error,
     selectedPeriod,
     hasChartData,
     labels,
     datasets,
-    chartOptions,
-    granularity,
     availablePeriods,
     getTotalRevenue,
     getTotalBilled,
-    getAverageMonthlyRevenue,
     getTooltipTitle,
     loadChartData,
     refreshChartData,
@@ -293,24 +292,10 @@ const toggleDatasetVisibility = (datasetKey: string) => {
     }
 }
 
-const toggleLineType = () => {
-    isLineSmooth.value = !isLineSmooth.value
-
-    if (chartInstance) {
-        // Mettre à jour la tension des datasets
-        const tension = isLineSmooth.value ? 0.4 : 0
-        chartInstance.data.datasets.forEach((dataset: any) => {
-            dataset.tension = tension
-        })
-        chartInstance.update('active')
-    }
-}
 
 // Chart functions
 const createChart = async (): Promise<void> => {
     if (!chartCanvas.value || !Chart || !hasChartData.value) return
-
-    const labelsCount = labels.value.length
 
     const config = {
         type: 'line' as const,

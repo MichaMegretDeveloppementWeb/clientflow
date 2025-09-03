@@ -14,30 +14,16 @@ class RevenueResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        // Le service retourne déjà la structure correcte, on ne fait que passer les données
+        // en ajoutant les options de chart côté resource
         return [
-            'labels' => $this->resource['labels'],
-            'datasets' => [
-                [
-                    'label' => 'Revenus réels',
-                    'data' => $this->resource['datasets'][0]['data'],
-                    'borderColor' => 'rgb(34, 197, 94)',
-                    'backgroundColor' => 'rgba(34, 197, 94, 0.1)',
-                    'tension' => 0.3,
-                    'fill' => true,
-                ],
-                [
-                    'label' => 'Revenus Facturé',
-                    'data' => $this->resource['datasets'][1]['data'],
-                    'borderColor' => 'rgb(59, 130, 246)',
-                    'backgroundColor' => 'rgba(59, 130, 246, 0.1)',
-                    'tension' => 0.3,
-                    'fill' => true,
-                ],
-            ],
+            'labels' => $this->resource['labels'] ?? [],
+            'datasets' => $this->resource['datasets'] ?? [],
             'granularity' => $this->resource['granularity'] ?? 'month',
             'period' => $this->resource['period'] ?? '6months',
             'start_date' => $this->resource['start_date'] ?? null,
             'end_date' => $this->resource['end_date'] ?? null,
+            'error' => $this->resource['error'] ?? null,
             'chart_options' => [
                 'responsive' => true,
                 'maintainAspectRatio' => false,
@@ -51,19 +37,19 @@ class RevenueResource extends JsonResource
                     ],
                     'tooltip' => [
                         'callbacks' => [
-                            'label' => "function(context) { return context.dataset.label + ': ' + new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(context.parsed.y); }"
-                        ]
-                    ]
+                            'label' => "function(context) { return context.dataset.label + ': ' + new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(context.parsed.y); }",
+                        ],
+                    ],
                 ],
                 'scales' => [
                     'y' => [
                         'beginAtZero' => true,
                         'ticks' => [
-                            'callback' => "function(value) { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value); }"
-                        ]
-                    ]
-                ]
-            ]
+                            'callback' => "function(value) { return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value); }",
+                        ],
+                    ],
+                ],
+            ],
         ];
     }
 }

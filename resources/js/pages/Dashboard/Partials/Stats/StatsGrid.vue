@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import StatsCard from './StatsCard.vue'
 import { useStatistics } from '@/composables/dashboard/useStatistics'
 import { route } from 'ziggy-js'
@@ -44,16 +44,12 @@ const {
     isLoading,
     error,
     loadStatistics,
-    formatCurrency,
-    formatPercentage,
-    getGrowthIndicator,
 } = useStatistics()
 
 
 const displayStats = computed(() => {
     if (!statistics.value) return []
 
-    const growthIndicator = getGrowthIndicator(statistics.value.revenue.growth)
 
     return [
         {

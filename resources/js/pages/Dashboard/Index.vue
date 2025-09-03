@@ -72,7 +72,7 @@ import { Button } from '@/components/ui/button';
 import OptimizedIcon from '@/components/OptimizedIcon.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import LazyWrapper from '@/components/LazyWrapper.vue';
-import { SkeletonCard, SkeletonChart } from '@/components/skeletons';
+import { SkeletonChart } from '@/components/skeletons';
 
 // Imports directs pour les composants critiques
 import DashboardHeader from './Partials/DashboardHeader.vue';
@@ -81,7 +81,6 @@ import RecentActivityCard from './Partials/Activities/RecentActivityCard.vue';
 import StatsGrid from './Partials/Stats/StatsGrid.vue';
 import BillingGrid from './Partials/Billing/BillingGrid.vue';
 import QuickStatsGrid from './Partials/QuickStats/QuickStatsGrid.vue';
-import HelpGrid from './Partials/Help/HelpGrid.vue';
 
 // Initialisation simplifiée
 // Supprimé le préchargement d'icônes inutile

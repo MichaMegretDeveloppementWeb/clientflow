@@ -4,7 +4,6 @@ namespace App\Services\Projects;
 
 use App\Models\Project;
 use App\Repositories\Contracts\Projects\ProjectDetailRepositoryInterface;
-use App\DTOs\ProjectDTO;
 
 class ProjectDetailService
 {
@@ -33,10 +32,10 @@ class ProjectDetailService
                 'is_overdue' => false,
                 'client' => [
                     'id' => null,
-                    'name' => ''
-                ]
+                    'name' => '',
+                ],
             ],
-            'events' => []
+            'events' => [],
         ];
     }
 
@@ -47,8 +46,8 @@ class ProjectDetailService
     {
         try {
             return $this->getProjectDetails($projectId);
-        }catch (\Exception $e) {
-            throw new \Exception("Erreurs lors du chargement des données.");
+        } catch (\Exception $e) {
+            throw new \Exception('Erreurs lors du chargement des données.');
         }
     }
 
@@ -60,17 +59,17 @@ class ProjectDetailService
 
         $project = $this->projectRepository->findWithRelations($projectId, ['client', 'events']);
 
-        if (!$project) {
+        if (! $project) {
             return [
                 'project' => [],
                 'errors' => [
                     'project' => 'Projet introuvable',
-                ]
+                ],
             ];
         }
 
         return [
-            'project' => ProjectDTO::fromModel($project)->toDetailArray(),
+            'project' => $this->transformProjectForDetail($project),
             'events' => $project->events->map(function ($event) {
                 return [
                     'id' => $event->id,
@@ -90,7 +89,53 @@ class ProjectDetailService
                     'updated_at' => $event->updated_at->toISOString(),
                 ];
             }),
-            'errors' => []
+            'errors' => [],
+        ];
+    }
+
+    /**
+     * Transform Project model for detail page without DTO
+     */
+    private function transformProjectForDetail($project): array
+    {
+        $statusLabels = [
+            'active' => 'Actif',
+            'completed' => 'Terminé',
+            'on_hold' => 'En pause',
+            'cancelled' => 'Annulé',
+        ];
+
+        // Calculate is_overdue for project
+        $isOverdue = $project->status === 'active' &&
+                    $project->end_date &&
+                    $project->end_date->startOfDay()->lt(now()->startOfDay());
+
+        return [
+            'id' => $project->id,
+            'client_id' => $project->client_id,
+            'name' => $project->name,
+            'description' => $project->description,
+            'status' => $project->status,
+            'budget' => $project->budget,
+            'start_date' => $project->start_date?->toISOString(),
+            'end_date' => $project->end_date?->toISOString(),
+            'created_at' => $project->created_at?->toISOString(),
+            'updated_at' => $project->updated_at?->toISOString(),
+
+            // Labels calculés
+            'status_label' => $statusLabels[$project->status] ?? $project->status,
+            'budget_formatted' => $project->budget ? number_format($project->budget, 2, ',', ' ').' €' : null,
+
+            // Calculs booléens
+            'is_overdue' => $isOverdue,
+
+            // Relations (déjà chargées)
+            'client' => $project->client ? [
+                'id' => $project->client->id,
+                'name' => $project->client->name,
+                'company' => $project->client->company,
+                'email' => $project->client->email,
+            ] : null,
         ];
     }
 }

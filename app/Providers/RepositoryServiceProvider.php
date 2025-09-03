@@ -127,6 +127,38 @@ class RepositoryServiceProvider extends ServiceProvider
             \App\Repositories\Contracts\Projects\ProjectDeleteRepositoryInterface::class,
             \App\Repositories\Projects\ProjectDeleteRepository::class
         );
+
+        // Dashboard repositories bindings
+        $this->app->bind(
+            \App\Repositories\Contracts\Dashboard\StatisticsRepositoryInterface::class,
+            \App\Repositories\Dashboard\StatisticsRepository::class
+        );
+
+        // Dashboard repositories bindings
+        $this->app->bind(
+            \App\Repositories\Contracts\Dashboard\RevenueChartRepositoryInterface::class,
+            \App\Repositories\Dashboard\RevenueChartRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Contracts\Dashboard\QuickStatsRepositoryInterface::class,
+            \App\Repositories\Dashboard\QuickStatsRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Contracts\Dashboard\TasksRepositoryInterface::class,
+            \App\Repositories\Dashboard\TasksRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Contracts\Dashboard\ActivitiesRepositoryInterface::class,
+            \App\Repositories\Dashboard\ActivitiesRepository::class
+        );
+
+        $this->app->bind(
+            \App\Repositories\Contracts\Dashboard\BillingRepositoryInterface::class,
+            \App\Repositories\Dashboard\BillingRepository::class
+        );
     }
 
     /**

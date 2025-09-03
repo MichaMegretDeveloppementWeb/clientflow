@@ -6,9 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
-use App\Enums\EventType;
-use App\Enums\EventStatus;
-use App\Enums\PaymentStatus;
 
 class Event extends Model
 {
@@ -43,13 +40,9 @@ class Event extends Model
         'updated_at' => 'datetime',
     ];
 
-    protected $appends = [
-        'event_type_label',
-        'status_label',
-        'payment_status_label',
-        'is_overdue',
-        'is_payment_overdue',
-    ];
+    // PERFORMANCE: Suppression des $appends pour éviter les calculs automatiques
+    // Les labels et calculs seront ajoutés manuellement quand nécessaire
+    protected $appends = [];
 
     public function project(): BelongsTo
     {
@@ -144,11 +137,11 @@ class Event extends Model
                     ->where('status', 'todo')
                     ->whereDate('execution_date', '>=', now()->toDateString());
             })
-            ->orWhere(function ($sub) {
-                $sub->where('event_type', 'billing')
-                    ->where('status', 'to_send')
-                    ->whereDate('send_date', '>=', now()->toDateString());
-            });
+                ->orWhere(function ($sub) {
+                    $sub->where('event_type', 'billing')
+                        ->where('status', 'to_send')
+                        ->whereDate('send_date', '>=', now()->toDateString());
+                });
         })->orderBy(DB::raw('COALESCE(execution_date, send_date)'), 'asc');
     }
 
@@ -159,7 +152,7 @@ class Event extends Model
     {
         return $query->with([
             'project:id,name,client_id,status',
-            'project.client:id,name,company'
+            'project.client:id,name,company',
         ]);
     }
 
@@ -177,11 +170,11 @@ class Event extends Model
                         ->whereDate('execution_date', '<', now());
                 })
                 // Overdue billing events
-                ->orWhere(function ($sub) {
-                    $sub->where('event_type', 'billing')
-                        ->where('status', 'to_send')
-                        ->whereDate('send_date', '<', now());
-                });
+                    ->orWhere(function ($sub) {
+                        $sub->where('event_type', 'billing')
+                            ->where('status', 'to_send')
+                            ->whereDate('send_date', '<', now());
+                    });
             })
             ->orderByRaw('
                 CASE 
@@ -193,7 +186,6 @@ class Event extends Model
             ->limit($limit);
     }
 
-
     /**
      * Scope for unpaid invoices with client info
      */
@@ -203,7 +195,7 @@ class Event extends Model
             ->where('payment_status', 'pending')
             ->with([
                 'project:id,name,client_id',
-                'project.client:id,name,company,email'
+                'project.client:id,name,company,email',
             ])
             ->select('id', 'project_id', 'name', 'amount', 'send_date', 'payment_due_date')
             ->orderBy('payment_due_date', 'asc');
@@ -216,15 +208,15 @@ class Event extends Model
     {
         return $query->where(function ($q) use ($term) {
             $q->where('name', 'like', "%{$term}%")
-              ->orWhere('description', 'like', "%{$term}%")
-              ->orWhere('type', 'like', "%{$term}%")
-              ->orWhereHas('project', function ($projectQuery) use ($term) {
-                  $projectQuery->where('name', 'like', "%{$term}%")
-                               ->orWhereHas('client', function ($clientQuery) use ($term) {
-                                   $clientQuery->where('name', 'like', "%{$term}%")
-                                               ->orWhere('company', 'like', "%{$term}%");
-                               });
-              });
+                ->orWhere('description', 'like', "%{$term}%")
+                ->orWhere('type', 'like', "%{$term}%")
+                ->orWhereHas('project', function ($projectQuery) use ($term) {
+                    $projectQuery->where('name', 'like', "%{$term}%")
+                        ->orWhereHas('client', function ($clientQuery) use ($term) {
+                            $clientQuery->where('name', 'like', "%{$term}%")
+                                ->orWhere('company', 'like', "%{$term}%");
+                        });
+                });
         });
     }
 
@@ -270,31 +262,31 @@ class Event extends Model
                     ->whereDate('execution_date', '<', now()->toDateString());
             })
             // Facturation en retard : status = to_send et send_date dépassée (avant aujourd'hui)
-            ->orWhere(function ($sub) {
-                $sub->where('event_type', 'billing')
-                    ->where('status', 'to_send')
-                    ->whereDate('send_date', '<', now()->toDateString());
-            });
+                ->orWhere(function ($sub) {
+                    $sub->where('event_type', 'billing')
+                        ->where('status', 'to_send')
+                        ->whereDate('send_date', '<', now()->toDateString());
+                });
         });
     }
 
     public function scopePaymentOverdue($query)
     {
         return $query->where('event_type', 'billing')
-                    ->where('payment_status', 'pending')
-                    ->whereDate('payment_due_date', '<', now()->toDateString());
+            ->where('payment_status', 'pending')
+            ->whereDate('payment_due_date', '<', now()->toDateString());
     }
 
     public function scopeUnpaid($query)
     {
         return $query->where('event_type', 'billing')
-                    ->where('payment_status', 'pending');
+            ->where('payment_status', 'pending');
     }
 
     public function scopePaid($query)
     {
         return $query->where('event_type', 'billing')
-                    ->where('payment_status', 'paid');
+            ->where('payment_status', 'paid');
     }
 
     public function getIsTodoAttribute(): bool
@@ -309,20 +301,21 @@ class Event extends Model
         } elseif ($this->event_type === 'billing') {
             return $this->status === 'to_send' && $this->send_date && $this->send_date->startOfDay()->lt(now()->startOfDay());
         }
+
         return false;
     }
 
     public function getIsPaymentOverdueAttribute(): bool
     {
-        return $this->event_type === 'billing' && 
-               $this->payment_status === 'pending' && 
-               $this->payment_due_date && 
+        return $this->event_type === 'billing' &&
+               $this->payment_status === 'pending' &&
+               $this->payment_due_date &&
                $this->payment_due_date->startOfDay()->lt(now()->startOfDay());
     }
 
     public function getDelayDaysAttribute(): ?int
     {
-        if (!$this->completed_at) {
+        if (! $this->completed_at) {
             return null;
         }
 
@@ -333,7 +326,7 @@ class Event extends Model
             $referenceDate = $this->send_date;
         }
 
-        if (!$referenceDate) {
+        if (! $referenceDate) {
             return null;
         }
 
@@ -349,6 +342,7 @@ class Event extends Model
             'sent' => 'Envoyé',
             'cancelled' => 'Annulé',
         ];
+
         return $labels[$this->status] ?? $this->status;
     }
 
@@ -358,6 +352,7 @@ class Event extends Model
             'step' => 'Étape',
             'billing' => 'Facturation',
         ];
+
         return $labels[$this->event_type] ?? $this->event_type;
     }
 
@@ -370,21 +365,23 @@ class Event extends Model
             'paid' => 'Payé',
             'pending' => 'En attente',
         ];
+
         return $labels[$this->payment_status] ?? $this->payment_status;
     }
 
     public function getFormattedAmountAttribute(): ?string
     {
-        if ($this->event_type !== 'billing' || !$this->amount) {
+        if ($this->event_type !== 'billing' || ! $this->amount) {
             return null;
         }
-        return number_format($this->amount, 2, ',', ' ') . ' €';
+
+        return number_format($this->amount, 2, ',', ' ').' €';
     }
 
     protected static function boot()
     {
         parent::boot();
-        
+
         // Auto-set completed_at when status changes to done/sent
         static::updating(function ($event) {
             if ($event->isDirty('status')) {

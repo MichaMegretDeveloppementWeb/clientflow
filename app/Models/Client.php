@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Client extends Model
 {
@@ -36,35 +36,8 @@ class Client extends Model
         return $this->hasMany(Project::class);
     }
 
-    public function getActiveProjectsCountAttribute(): int
-    {
-        // Si on a la valeur depuis withCount, l'utiliser
-        if (isset($this->attributes['active_projects_count'])) {
-            return (int) $this->attributes['active_projects_count'];
-        }
-        
-        // Fallback - éviter les requêtes si projects non chargés
-        if (!$this->relationLoaded('projects')) {
-            return $this->projects()->where('status', 'active')->count();
-        }
-        
-        return $this->projects->where('status', 'active')->count();
-    }
-
-    public function getCompletedProjectsCountAttribute(): int
-    {
-        // Si on a la valeur depuis withCount, l'utiliser
-        if (isset($this->attributes['completed_projects_count'])) {
-            return (int) $this->attributes['completed_projects_count'];
-        }
-        
-        // Fallback - éviter les requêtes si projects non chargés
-        if (!$this->relationLoaded('projects')) {
-            return $this->projects()->where('status', 'completed')->count();
-        }
-        
-        return $this->projects->where('status', 'completed')->count();
-    }
+    // PERFORMANCE: Accesseurs de comptage supprimés également
+    // Les withCount() dans les Repository fournissent toujours ces données
 
     // Optimized relationships
     public function latest_project()
@@ -88,35 +61,35 @@ class Client extends Model
         return $query->with([
             'latest_project' => function ($query) {
                 $query->select('id', 'client_id', 'name', 'status', 'budget', 'created_at', 'updated_at');
-            }
-        ])
-        ->withCount([
-            'projects as projects_count',
-            'projects as active_projects_count' => function ($query) {
-                $query->where('status', 'active');
             },
-            'projects as completed_projects_count' => function ($query) {
-                $query->where('status', 'completed');
-            }
         ])
-        ->addSelect([
-            'total_revenue' => Event::select(\DB::raw('COALESCE(SUM(amount), 0)'))
-                ->join('projects', 'events.project_id', '=', 'projects.id')
-                ->whereColumn('projects.client_id', 'clients.id')
-                ->where('events.event_type', 'billing')
-                ->where('events.payment_status', 'paid'),
-            'pending_amount' => Event::select(\DB::raw('COALESCE(SUM(amount), 0)'))
-                ->join('projects', 'events.project_id', '=', 'projects.id')
-                ->whereColumn('projects.client_id', 'clients.id')
-                ->where('events.event_type', 'billing')
-                ->where('events.payment_status', 'pending'),
-            'has_overdue_payments' => Event::select(\DB::raw('COUNT(*) > 0'))
-                ->join('projects', 'events.project_id', '=', 'projects.id')
-                ->whereColumn('projects.client_id', 'clients.id')
-                ->where('events.event_type', 'billing')
-                ->where('events.payment_status', 'pending')
-                ->where('events.payment_due_date', '<', \DB::raw('NOW()')),
-        ]);
+            ->withCount([
+                'projects as projects_count',
+                'projects as active_projects_count' => function ($query) {
+                    $query->where('status', 'active');
+                },
+                'projects as completed_projects_count' => function ($query) {
+                    $query->where('status', 'completed');
+                },
+            ])
+            ->addSelect([
+                'total_revenue' => Event::select(\DB::raw('COALESCE(SUM(amount), 0)'))
+                    ->join('projects', 'events.project_id', '=', 'projects.id')
+                    ->whereColumn('projects.client_id', 'clients.id')
+                    ->where('events.event_type', 'billing')
+                    ->where('events.payment_status', 'paid'),
+                'pending_amount' => Event::select(\DB::raw('COALESCE(SUM(amount), 0)'))
+                    ->join('projects', 'events.project_id', '=', 'projects.id')
+                    ->whereColumn('projects.client_id', 'clients.id')
+                    ->where('events.event_type', 'billing')
+                    ->where('events.payment_status', 'pending'),
+                'has_overdue_payments' => Event::select(\DB::raw('COUNT(*) > 0'))
+                    ->join('projects', 'events.project_id', '=', 'projects.id')
+                    ->whereColumn('projects.client_id', 'clients.id')
+                    ->where('events.event_type', 'billing')
+                    ->where('events.payment_status', 'pending')
+                    ->where('events.payment_due_date', '<', \DB::raw('NOW()')),
+            ]);
     }
 
     /**
@@ -127,19 +100,19 @@ class Client extends Model
         return $query->where('clients.user_id', auth()->id())
             ->select([
                 'clients.id',
-                'clients.name', 
+                'clients.name',
                 'clients.company',
                 'clients.email',
                 'clients.phone',
                 'clients.address',
                 'clients.notes',
                 'clients.created_at',
-                'clients.updated_at'
+                'clients.updated_at',
             ])
             ->with([
                 'latest_project' => function ($query) {
                     $query->select('id', 'client_id', 'name', 'status', 'budget', 'created_at', 'updated_at');
-                }
+                },
             ])
             ->withCount([
                 'projects as projects_count',
@@ -148,7 +121,7 @@ class Client extends Model
                 },
                 'projects as completed_projects_count' => function ($query) {
                     $query->where('status', 'completed');
-                }
+                },
             ])
             ->addSelect([
                 'total_revenue' => Event::select(\DB::raw('COALESCE(SUM(amount), 0)'))
@@ -179,7 +152,7 @@ class Client extends Model
             ->withCount([
                 'projects as active_projects_count' => function ($query) {
                     $query->where('status', 'active');
-                }
+                },
             ]);
     }
 
@@ -190,9 +163,9 @@ class Client extends Model
     {
         return $query->where(function ($q) use ($term) {
             $q->where('name', 'like', "%{$term}%")
-              ->orWhere('email', 'like', "%{$term}%")
-              ->orWhere('company', 'like', "%{$term}%")
-              ->orWhere('phone', 'like', "%{$term}%");
+                ->orWhere('email', 'like', "%{$term}%")
+                ->orWhere('company', 'like', "%{$term}%")
+                ->orWhere('phone', 'like', "%{$term}%");
         });
     }
 
@@ -203,61 +176,11 @@ class Client extends Model
     {
         return $query->whereHas('projects.events', function ($q) {
             $q->where('event_type', 'billing')
-              ->where('payment_status', 'pending');
+                ->where('payment_status', 'pending');
         });
     }
 
-    // Computed attributes with caching
-    public function getTotalRevenueAttribute(): float
-    {
-        // Si on a la valeur depuis la sous-requête optimisée, l'utiliser
-        if (isset($this->attributes['total_revenue'])) {
-            return (float) $this->attributes['total_revenue'];
-        }
-        
-        // Fallback pour les cas où on n'utilise pas withOptimizedRelations
-        return $this->projects->sum(function ($project) {
-            return $project->events()
-                ->where('event_type', 'billing')
-                ->where('payment_status', 'paid')
-                ->sum('amount');
-        });
-    }
-
-    public function getPendingAmountAttribute(): float
-    {
-        // Si on a la valeur depuis la sous-requête optimisée, l'utiliser
-        if (isset($this->attributes['pending_amount'])) {
-            return (float) $this->attributes['pending_amount'];
-        }
-        
-        // Fallback pour les cas où on n'utilise pas withOptimizedRelations
-        return $this->projects->sum(function ($project) {
-            return $project->events()
-                ->where('event_type', 'billing')
-                ->where('payment_status', 'pending')
-                ->sum('amount');
-        });
-    }
-
-    public function getHasOverduePaymentsAttribute(): bool
-    {
-        // Si on a la valeur depuis la sous-requête optimisée, l'utiliser
-        if (isset($this->attributes['has_overdue_payments'])) {
-            return (bool) $this->attributes['has_overdue_payments'];
-        }
-        
-        // Fallback - éviter les requêtes N+1 si projects non chargés
-        if (!$this->relationLoaded('projects')) {
-            return false;
-        }
-        
-        return $this->projects->some(function ($project) {
-            return $project->events()
-                ->where('event_type', 'billing')
-                ->where('payment_status', 'pending')
-                ->where('payment_due_date', '<', now())
-                ->exists();
-        });
-    }
+    // PERFORMANCE: TOUS LES ACCESSEURS FINANCIERS SUPPRIMÉS
+    // Ces données sont maintenant TOUJOURS calculées dans les Repository via des sous-requêtes
+    // pour éviter les 90+ requêtes en double causées par les fallbacks
 }

@@ -31,7 +31,7 @@ export function useRevenueChart() {
         console.log('loadChartData called with period:', period)
         isLoading.value = true
         error.value = null
-
+        console.log(period);
         try {
             const url = route('dashboard.revenue-chart') + `?period=${period}`
             console.log('Fetching data from:', url)
@@ -48,8 +48,29 @@ export function useRevenueChart() {
             }
 
             const data: RevenueChartResponse = await response.json()
-            chartData.value = data.revenue_chart
-            selectedPeriod.value = period
+            
+            // Vérifier s'il y a une erreur dans les données retournées
+            if (data.revenue_chart?.error) {
+                // Afficher l'erreur détaillée en console en mode développement
+                if (import.meta.env.DEV) {
+                    console.error('Revenue Chart Backend Error:', data.revenue_chart.error)
+                }
+                // Afficher une erreur générale à l'utilisateur
+                error.value = 'Impossible de charger les données de revenus'
+                // Réinitialiser chartData avec des données vides
+                chartData.value = {
+                    labels: [],
+                    datasets: [],
+                    granularity: 'month',
+                    period: period,
+                    start_date: null,
+                    end_date: null,
+                    chart_options: {}
+                }
+            } else {
+                chartData.value = data.revenue_chart
+                selectedPeriod.value = period
+            }
         } catch (err) {
             console.error('Error loading chart data:', err)
             error.value = err instanceof Error ? err.message : 'Failed to load chart data'

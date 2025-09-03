@@ -46,15 +46,8 @@ class Project extends Model
         return $this->hasOne(Event::class)->latest('created_at');
     }
 
-    public function getLatestEventAttribute(): ?Event
-    {
-        return $this->latest_event()->first();
-    }
-
-    public function getEventsCountAttribute(): int
-    {
-        return $this->events()->count();
-    }
+    // PERFORMANCE: Accesseurs supprimés pour éviter les requêtes automatiques
+    // Les données sont maintenant calculées dans les Repository avec des sous-requêtes
 
     // Optimized scopes
     public function scopeActive($query)
@@ -70,7 +63,7 @@ class Project extends Model
     public function scopeOverdue($query)
     {
         return $query->where('status', 'active')
-                    ->where('end_date', '<', now());
+            ->where('end_date', '<', now());
     }
 
     /**
@@ -80,52 +73,52 @@ class Project extends Model
     {
         return $query->with([
             'client:id,name,company,email',
-            'latest_event:id,project_id,name,event_type,status,amount,created_at'
+            'latest_event:id,project_id,name,event_type,status,amount,created_at',
         ])
-        ->withCount([
-            'events as events_count',
-            'events as completed_tasks_count' => function ($query) {
-                $query->where('event_type', 'step')
-                      ->where('status', 'done');
-            },
-            'events as pending_tasks_count' => function ($query) {
-                $query->where('event_type', 'step')
-                      ->where('status', 'todo');
-            }
-        ])
-        ->addSelect([
-            'total_billed' => Event::select(\DB::raw('COALESCE(SUM(amount), 0)'))
-                ->whereColumn('project_id', 'projects.id')
-                ->where('event_type', 'billing')
-                ->whereNotIn('status', ['cancelled']),
-            'total_paid' => Event::select(\DB::raw('COALESCE(SUM(amount), 0)'))
-                ->whereColumn('project_id', 'projects.id')
-                ->where('event_type', 'billing')
-                ->where('payment_status', 'paid'),
-            'total_unpaid' => Event::select(\DB::raw('COALESCE(SUM(amount), 0)'))
-                ->whereColumn('project_id', 'projects.id')
-                ->where('event_type', 'billing')
-                ->where('payment_status', 'pending'),
-            'has_overdue_events' => Event::select(\DB::raw('COUNT(*) > 0'))
-                ->whereColumn('project_id', 'projects.id')
-                ->where(function ($q) {
-                    $q->where(function ($sub) {
-                        $sub->where('event_type', 'step')
-                            ->where('status', 'todo')
-                            ->whereDate('execution_date', '<', now()->toDateString());
-                    })
-                    ->orWhere(function ($sub) {
-                        $sub->where('event_type', 'billing')
-                            ->where('status', 'to_send')
-                            ->whereDate('send_date', '<', now()->toDateString());
-                    });
-                }),
-            'has_payment_overdue' => Event::select(\DB::raw('COUNT(*) > 0'))
-                ->whereColumn('project_id', 'projects.id')
-                ->where('event_type', 'billing')
-                ->where('payment_status', 'pending')
-                ->whereDate('payment_due_date', '<', now()->toDateString()),
-        ]);
+            ->withCount([
+                'events as events_count',
+                'events as completed_tasks_count' => function ($query) {
+                    $query->where('event_type', 'step')
+                        ->where('status', 'done');
+                },
+                'events as pending_tasks_count' => function ($query) {
+                    $query->where('event_type', 'step')
+                        ->where('status', 'todo');
+                },
+            ])
+            ->addSelect([
+                'total_billed' => Event::select(\DB::raw('COALESCE(SUM(amount), 0)'))
+                    ->whereColumn('project_id', 'projects.id')
+                    ->where('event_type', 'billing')
+                    ->whereNotIn('status', ['cancelled']),
+                'total_paid' => Event::select(\DB::raw('COALESCE(SUM(amount), 0)'))
+                    ->whereColumn('project_id', 'projects.id')
+                    ->where('event_type', 'billing')
+                    ->where('payment_status', 'paid'),
+                'total_unpaid' => Event::select(\DB::raw('COALESCE(SUM(amount), 0)'))
+                    ->whereColumn('project_id', 'projects.id')
+                    ->where('event_type', 'billing')
+                    ->where('payment_status', 'pending'),
+                'has_overdue_events' => Event::select(\DB::raw('COUNT(*) > 0'))
+                    ->whereColumn('project_id', 'projects.id')
+                    ->where(function ($q) {
+                        $q->where(function ($sub) {
+                            $sub->where('event_type', 'step')
+                                ->where('status', 'todo')
+                                ->whereDate('execution_date', '<', now()->toDateString());
+                        })
+                            ->orWhere(function ($sub) {
+                                $sub->where('event_type', 'billing')
+                                    ->where('status', 'to_send')
+                                    ->whereDate('send_date', '<', now()->toDateString());
+                            });
+                    }),
+                'has_payment_overdue' => Event::select(\DB::raw('COUNT(*) > 0'))
+                    ->whereColumn('project_id', 'projects.id')
+                    ->where('event_type', 'billing')
+                    ->where('payment_status', 'pending')
+                    ->whereDate('payment_due_date', '<', now()->toDateString()),
+            ]);
     }
 
     /**
@@ -144,11 +137,11 @@ class Project extends Model
     {
         return $query->where(function ($q) use ($term) {
             $q->where('name', 'like', "%{$term}%")
-              ->orWhere('description', 'like', "%{$term}%")
-              ->orWhereHas('client', function ($clientQuery) use ($term) {
-                  $clientQuery->where('name', 'like', "%{$term}%")
-                              ->orWhere('company', 'like', "%{$term}%");
-              });
+                ->orWhere('description', 'like', "%{$term}%")
+                ->orWhereHas('client', function ($clientQuery) use ($term) {
+                    $clientQuery->where('name', 'like', "%{$term}%")
+                        ->orWhere('company', 'like', "%{$term}%");
+                });
         });
     }
 
@@ -175,127 +168,13 @@ class Project extends Model
     {
         return $query->whereHas('events', function ($q) {
             $q->where('event_type', 'billing')
-              ->where('payment_status', 'pending');
+                ->where('payment_status', 'pending');
         });
     }
 
-    /**
-     * Calcule le montant total facturé sur ce projet (factures envoyées)
-     */
-    public function getTotalBilledAttribute(): float
-    {
-        return $this->events()
-                    ->whereNot('status', 'cancelled')
-                   ->where('event_type', 'billing')
-                   ->sum('amount') ?? 0;
-    }
-
-    /**
-     * Calcule le montant des factures prévues (non envoyées et non annulées)
-     */
-    public function getTotalPendingBilledAttribute(): float
-    {
-        return $this->events()
-                   ->where('event_type', 'billing')
-                   ->whereNotIn('status', ['sent', 'cancelled']) // Toutes sauf envoyées et annulées
-                   ->sum('amount') ?? 0;
-    }
-
-    /**
-     * Calcule le montant total prévu (facturé + prévu)
-     */
-    public function getTotalProjectedAttribute(): float
-    {
-        return $this->total_billed + $this->total_pending_billed;
-    }
-
-    /**
-     * Calcule le montant des factures envoyées seulement
-     */
-    public function getTotalSentAttribute(): float
-    {
-        return $this->events()
-                   ->where('event_type', 'billing')
-                   ->where('status', 'sent')
-                   ->sum('amount') ?? 0;
-    }
-
-    /**
-     * Calcule le montant facturé et payé
-     */
-    public function getTotalPaidAttribute(): float
-    {
-        return $this->events()
-                   ->where('event_type', 'billing')
-                   ->where('status', 'sent')
-                   ->where('payment_status', 'paid')
-                   ->sum('amount') ?? 0;
-    }
-
-    /**
-     * Calcule le montant facturé mais non payé (en attente)
-     */
-    public function getTotalUnpaidAttribute(): float
-    {
-        return $this->events()
-                   ->where('event_type', 'billing')
-                   ->where('status', 'sent')
-                   ->where('payment_status', 'pending')
-                   ->sum('amount') ?? 0;
-    }
-
-    /**
-     * Calcule le montant facturé en retard de paiement
-     */
-    public function getTotalOverduePaymentAttribute(): float
-    {
-        return $this->events()
-                   ->where('event_type', 'billing')
-                   ->where('status', 'sent')
-                   ->where('payment_status', 'pending')
-                   ->where('payment_due_date', '<', now())
-                   ->sum('amount') ?? 0;
-    }
-
-    /**
-     * Calcule le montant facturé à payer (pas encore échu)
-     */
-    public function getTotalUpcomingPaymentAttribute(): float
-    {
-        return $this->events()
-                   ->where('event_type', 'billing')
-                   ->where('status', 'sent')
-                   ->where('payment_status', 'pending')
-                   ->where(function($query) {
-                       $query->where('payment_due_date', '>=', now())
-                             ->orWhereNull('payment_due_date');
-                   })
-                   ->sum('amount') ?? 0;
-    }
-
-    /**
-     * Calcule le pourcentage du budget utilisé
-     */
-    public function getBudgetProgressAttribute(): float
-    {
-        if (!$this->budget || $this->budget == 0) {
-            return 0;
-        }
-
-        return min(($this->total_billed / $this->budget) * 100, 100);
-    }
-
-    /**
-     * Indique si le budget est dépassé
-     */
-    public function getBudgetExceededAttribute(): bool
-    {
-        if (!$this->budget || $this->budget == 0) {
-            return false;
-        }
-
-        return $this->total_billed > $this->budget;
-    }
+    // PERFORMANCE: TOUS LES ACCESSEURS FINANCIERS SUPPRIMÉS
+    // Ces calculs sont maintenant fait via des sous-requêtes dans les Repository
+    // pour éviter les 300+ requêtes automatiques
 
     /**
      * Retourne les tâches à venir pour ce projet
@@ -303,8 +182,8 @@ class Project extends Model
     public function upcomingTasks()
     {
         return $this->events()
-                   ->whereIn('status', ['todo', 'to_send'])
-                   ->orderBy(\DB::raw('COALESCE(execution_date, send_date)'), 'asc');
+            ->whereIn('status', ['todo', 'to_send'])
+            ->orderBy(\DB::raw('COALESCE(execution_date, send_date)'), 'asc');
     }
 
     /**
@@ -315,43 +194,6 @@ class Project extends Model
         return $this->events()->overdue();
     }
 
-    /**
-     * Indique si le projet a des événements en retard
-     */
-    public function getHasOverdueEventsAttribute(): bool
-    {
-        return $this->events()
-                   ->overdue()
-                   ->exists();
-    }
-
-    /**
-     * Indique si le projet a des retards de paiement
-     */
-    public function getHasPaymentOverdueAttribute(): bool
-    {
-        return $this->events()
-                   ->paymentOverdue()
-                   ->exists();
-    }
-
-    /**
-     * Nombre d'événements en retard
-     */
-    public function getOverdueEventsCountAttribute(): int
-    {
-        return $this->events()
-                   ->overdue()
-                   ->count();
-    }
-
-    /**
-     * Nombre de paiements en retard
-     */
-    public function getPaymentOverdueCountAttribute(): int
-    {
-        return $this->events()
-                   ->paymentOverdue()
-                   ->count();
-    }
+    // PERFORMANCE: TOUS LES ACCESSEURS DE VÉRIFICATION SUPPRIMÉS
+    // Ces vérifications sont maintenant faites via des sous-requêtes dans les Repository
 }
