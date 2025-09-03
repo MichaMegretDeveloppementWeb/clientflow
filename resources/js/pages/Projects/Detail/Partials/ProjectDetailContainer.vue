@@ -165,7 +165,7 @@
             <ProjectDetailInfo :project="project" />
 
             <!-- Cards de métriques financières -->
-            <ProjectDetailStats :project="project" :events="events" />
+            <ProjectDetailStats :project="project" :financial-stats="props.financialStats" />
 
             <!-- Timeline des événements -->
             <ProjectDetailTimeline :project="project" :events="events || []" />
@@ -191,13 +191,13 @@ import ProjectDetailTimeline from './ProjectDetailTimeline.vue'
 interface Props {
     project: ProjectDetailData['project'] | null
     events?: Event[]
+    financialStats?: any | null
     isLoading: boolean
     hasError: boolean
     error: Record<string, string> | null
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _props = defineProps<Props>()
+const props = defineProps<Props>()
 
 defineEmits<{
     'update-status': [status: string]

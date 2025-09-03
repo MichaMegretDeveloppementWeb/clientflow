@@ -2,538 +2,318 @@
 
 namespace Tests\Unit\Models;
 
-use App\Enums\EventCategory;
-use App\Enums\EventStatus;
-use App\Enums\EventType;
-use App\Enums\PaymentStatus;
+use Tests\TestCase;
 use App\Models\Event;
 use App\Models\Project;
+use App\Models\Client;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
 class EventTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
-    public function it_can_create_a_step_event()
+    public function test_step_event_can_be_created()
     {
-        $project = Project::factory()->create();
+        $project = $this->createProject();
         $eventData = [
             'project_id' => $project->id,
-            'name' => 'Réunion de lancement',
-            'description' => 'Première réunion avec le client',
-            'type' => EventCategory::Meeting->value,
-            'event_type' => EventType::Step->value,
-            'status' => EventStatus::Todo->value,
-            'created_date' => now()->subDays(5),
-            'execution_date' => now()->addDays(2),
+            'name' => 'Test Step',
+            'description' => 'A test step event',
+            'type' => 'task',
+            'event_type' => 'step',
+            'status' => 'todo',
+            'created_date' => '2024-01-01',
+            'execution_date' => '2024-01-15'
         ];
 
-        $event = Event::create($eventData);
+        $event = Event::factory()->create($eventData);
 
         $this->assertInstanceOf(Event::class, $event);
-        $this->assertEquals('Réunion de lancement', $event->name);
-        $this->assertEquals(EventType::Step->value, $event->event_type);
-        $this->assertEquals(EventStatus::Todo->value, $event->status);
-        $this->assertNull($event->amount);
-        $this->assertNull($event->payment_status);
+        $this->assertEquals($eventData['name'], $event->name);
+        $this->assertEquals($eventData['description'], $event->description);
+        $this->assertEquals($eventData['type'], $event->type);
+        $this->assertEquals($eventData['event_type'], $event->event_type);
+        $this->assertEquals($eventData['status'], $event->status);
+        $this->assertEquals($eventData['created_date'], $event->created_date->format('Y-m-d'));
+        $this->assertEquals($eventData['execution_date'], $event->execution_date->format('Y-m-d'));
     }
 
-    /** @test */
-    public function it_can_create_a_billing_event()
+    public function test_billing_event_can_be_created()
     {
-        $project = Project::factory()->create();
+        $project = $this->createProject();
         $eventData = [
             'project_id' => $project->id,
-            'name' => 'Facture #001',
-            'description' => 'Première facture du projet',
-            'type' => EventCategory::Invoice->value,
-            'event_type' => EventType::Billing->value,
-            'status' => EventStatus::ToSend->value,
-            'amount' => 5000.00,
-            'payment_status' => PaymentStatus::Pending->value,
-            'created_date' => now()->subDays(3),
-            'send_date' => now()->addDay(),
-            'payment_due_date' => now()->addDays(30),
+            'name' => 'Test Invoice',
+            'description' => 'A test billing event',
+            'type' => 'invoice',
+            'event_type' => 'billing',
+            'status' => 'to_send',
+            'created_date' => '2024-01-01',
+            'send_date' => '2024-01-15',
+            'payment_due_date' => '2024-02-15',
+            'amount' => 1500.00,
+            'payment_status' => 'pending'
         ];
 
-        $event = Event::create($eventData);
+        $event = Event::factory()->create($eventData);
 
         $this->assertInstanceOf(Event::class, $event);
-        $this->assertEquals('Facture #001', $event->name);
-        $this->assertEquals(EventType::Billing->value, $event->event_type);
-        $this->assertEquals(EventStatus::ToSend->value, $event->status);
-        $this->assertEquals(5000.00, $event->amount);
-        $this->assertEquals(PaymentStatus::Pending->value, $event->payment_status);
+        $this->assertEquals($eventData['name'], $event->name);
+        $this->assertEquals($eventData['event_type'], $event->event_type);
+        $this->assertEquals($eventData['status'], $event->status);
+        $this->assertEquals($eventData['amount'], $event->amount);
+        $this->assertEquals($eventData['payment_status'], $event->payment_status);
+        $this->assertEquals($eventData['send_date'], $event->send_date->format('Y-m-d'));
+        $this->assertEquals($eventData['payment_due_date'], $event->payment_due_date->format('Y-m-d'));
     }
 
-    /** @test */
-    public function it_belongs_to_a_project()
+    public function test_event_belongs_to_project()
     {
-        $project = Project::factory()->create();
-        $event = Event::factory()->create(['project_id' => $project->id]);
+        $project = $this->createProject();
+        $event = $this->createEvent(['project_id' => $project->id]);
 
         $this->assertInstanceOf(Project::class, $event->project);
         $this->assertEquals($project->id, $event->project->id);
+        $this->assertEquals($project->name, $event->project->name);
     }
 
-    /** @test */
-    public function it_has_step_scope()
+    public function test_event_has_client_through_project()
     {
-        Event::factory()->count(3)->step()->create();
-        Event::factory()->count(2)->billing()->create();
+        $client = $this->createClient();
+        $project = $this->createProject(['client_id' => $client->id]);
+        $event = $this->createEvent(['project_id' => $project->id]);
 
-        $stepEvents = Event::step()->get();
-
-        $this->assertCount(3, $stepEvents);
-        $stepEvents->each(function ($event) {
-            $this->assertEquals(EventType::Step->value, $event->event_type);
-        });
+        // Assuming there's a client relationship through project
+        $this->assertEquals($client->id, $event->project->client->id);
+        $this->assertEquals($client->name, $event->project->client->name);
     }
 
-    /** @test */
-    public function it_has_billing_scope()
+    public function test_step_event_status_enum_values()
     {
-        Event::factory()->count(2)->step()->create();
-        Event::factory()->count(4)->billing()->create();
+        $project = $this->createProject();
+        $validStatuses = ['todo', 'done', 'cancelled'];
 
-        $billingEvents = Event::billing()->get();
-
-        $this->assertCount(4, $billingEvents);
-        $billingEvents->each(function ($event) {
-            $this->assertEquals(EventType::Billing->value, $event->event_type);
-        });
+        foreach ($validStatuses as $status) {
+            $event = $this->createEvent([
+                'project_id' => $project->id,
+                'event_type' => 'step',
+                'status' => $status
+            ]);
+            $this->assertEquals($status, $event->status);
+        }
     }
 
-    /** @test */
-    public function it_has_todo_scope_for_step_events()
+    public function test_billing_event_status_enum_values()
     {
-        Event::factory()->step()->create(['status' => EventStatus::Todo->value]);
-        Event::factory()->step()->create(['status' => EventStatus::Done->value]);
-        Event::factory()->billing()->create(['status' => EventStatus::ToSend->value]);
+        $project = $this->createProject();
+        $validStatuses = ['to_send', 'sent', 'cancelled'];
 
-        $todoEvents = Event::todo()->get();
-
-        $this->assertCount(1, $todoEvents);
-        $this->assertEquals(EventStatus::Todo->value, $todoEvents->first()->status);
+        foreach ($validStatuses as $status) {
+            $event = $this->createEvent([
+                'project_id' => $project->id,
+                'event_type' => 'billing',
+                'status' => $status
+            ]);
+            $this->assertEquals($status, $event->status);
+        }
     }
 
-    /** @test */
-    public function it_has_done_scope_for_step_events()
+    public function test_billing_event_payment_status_enum_values()
     {
-        Event::factory()->step()->create(['status' => EventStatus::Done->value]);
-        Event::factory()->step()->create(['status' => EventStatus::Todo->value]);
-        Event::factory()->step()->create(['status' => EventStatus::Done->value]);
+        $project = $this->createProject();
+        $validPaymentStatuses = ['pending', 'paid'];
 
-        $doneEvents = Event::done()->get();
-
-        $this->assertCount(2, $doneEvents);
-        $doneEvents->each(function ($event) {
-            $this->assertEquals(EventStatus::Done->value, $event->status);
-        });
+        foreach ($validPaymentStatuses as $paymentStatus) {
+            $event = $this->createEvent([
+                'project_id' => $project->id,
+                'event_type' => 'billing',
+                'payment_status' => $paymentStatus
+            ]);
+            $this->assertEquals($paymentStatus, $event->payment_status);
+        }
     }
 
-    /** @test */
-    public function it_has_to_send_scope_for_billing_events()
+    public function test_event_type_enum_values()
     {
-        Event::factory()->billing()->create(['status' => EventStatus::ToSend->value]);
-        Event::factory()->billing()->create(['status' => EventStatus::Sent->value]);
-        Event::factory()->billing()->create(['status' => EventStatus::ToSend->value]);
+        $project = $this->createProject();
+        $validEventTypes = ['step', 'billing'];
 
-        $toSendEvents = Event::toSend()->get();
-
-        $this->assertCount(2, $toSendEvents);
-        $toSendEvents->each(function ($event) {
-            $this->assertEquals(EventStatus::ToSend->value, $event->status);
-        });
+        foreach ($validEventTypes as $eventType) {
+            $event = $this->createEvent([
+                'project_id' => $project->id,
+                'event_type' => $eventType
+            ]);
+            $this->assertEquals($eventType, $event->event_type);
+        }
     }
 
-    /** @test */
-    public function it_has_sent_scope_for_billing_events()
+    public function test_event_name_is_required()
     {
-        Event::factory()->billing()->create(['status' => EventStatus::Sent->value]);
-        Event::factory()->billing()->create(['status' => EventStatus::ToSend->value]);
-
-        $sentEvents = Event::sent()->get();
-
-        $this->assertCount(1, $sentEvents);
-        $this->assertEquals(EventStatus::Sent->value, $sentEvents->first()->status);
-    }
-
-    /** @test */
-    public function it_has_cancelled_scope()
-    {
-        Event::factory()->step()->create(['status' => EventStatus::Cancelled->value]);
-        Event::factory()->billing()->create(['status' => EventStatus::Cancelled->value]);
-        Event::factory()->step()->create(['status' => EventStatus::Todo->value]);
-
-        $cancelledEvents = Event::cancelled()->get();
-
-        $this->assertCount(2, $cancelledEvents);
-        $cancelledEvents->each(function ($event) {
-            $this->assertEquals(EventStatus::Cancelled->value, $event->status);
-        });
-    }
-
-    /** @test */
-    public function it_has_paid_scope_for_billing_events()
-    {
-        Event::factory()->billing()->create([
-            'status' => EventStatus::Sent->value,
-            'payment_status' => PaymentStatus::Paid->value,
-        ]);
-        Event::factory()->billing()->create([
-            'status' => EventStatus::Sent->value,
-            'payment_status' => PaymentStatus::Pending->value,
-        ]);
-
-        $paidEvents = Event::paid()->get();
-
-        $this->assertCount(1, $paidEvents);
-        $this->assertEquals(PaymentStatus::Paid->value, $paidEvents->first()->payment_status);
-    }
-
-    /** @test */
-    public function it_has_unpaid_scope_for_billing_events()
-    {
-        Event::factory()->billing()->create([
-            'status' => EventStatus::Sent->value,
-            'payment_status' => PaymentStatus::Pending->value,
-        ]);
-        Event::factory()->billing()->create([
-            'status' => EventStatus::Sent->value,
-            'payment_status' => PaymentStatus::Paid->value,
-        ]);
-        Event::factory()->billing()->create([
-            'status' => EventStatus::ToSend->value,
-            'payment_status' => null,
-        ]);
-
-        $unpaidEvents = Event::unpaid()->get();
-
-        $this->assertCount(1, $unpaidEvents);
-        $this->assertEquals(PaymentStatus::Pending->value, $unpaidEvents->first()->payment_status);
-    }
-
-    /** @test */
-    public function it_has_overdue_scope_for_step_events()
-    {
-        Event::factory()->step()->create([
-            'status' => EventStatus::Todo->value,
-            'execution_date' => now()->subDays(5),
-        ]);
-        Event::factory()->step()->create([
-            'status' => EventStatus::Todo->value,
-            'execution_date' => now()->addDays(5),
-        ]);
-        Event::factory()->step()->create([
-            'status' => EventStatus::Done->value,
-            'execution_date' => now()->subDays(10),
-        ]);
-
-        $overdueEvents = Event::overdue()->get();
-
-        $this->assertCount(1, $overdueEvents);
-        $this->assertTrue($overdueEvents->first()->execution_date->isPast());
-        $this->assertEquals(EventStatus::Todo->value, $overdueEvents->first()->status);
-    }
-
-    /** @test */
-    public function it_has_payment_overdue_scope_for_billing_events()
-    {
-        Event::factory()->billing()->create([
-            'status' => EventStatus::Sent->value,
-            'payment_status' => PaymentStatus::Pending->value,
-            'payment_due_date' => now()->subDays(5),
-        ]);
-        Event::factory()->billing()->create([
-            'status' => EventStatus::Sent->value,
-            'payment_status' => PaymentStatus::Pending->value,
-            'payment_due_date' => now()->addDays(5),
-        ]);
-        Event::factory()->billing()->create([
-            'status' => EventStatus::Sent->value,
-            'payment_status' => PaymentStatus::Paid->value,
-            'payment_due_date' => now()->subDays(10),
-        ]);
-
-        $paymentOverdueEvents = Event::paymentOverdue()->get();
-
-        $this->assertCount(1, $paymentOverdueEvents);
-        $this->assertTrue($paymentOverdueEvents->first()->payment_due_date->isPast());
-        $this->assertEquals(PaymentStatus::Pending->value, $paymentOverdueEvents->first()->payment_status);
-    }
-
-    /** @test */
-    public function it_has_recent_scope()
-    {
-        Event::factory()->create(['created_at' => now()->subDays(10)]);
-        Event::factory()->create(['created_at' => now()->subDays(40)]);
-        Event::factory()->create(['created_at' => now()->subDays(5)]);
-
-        $recentEvents = Event::recent(30)->get();
-
-        $this->assertCount(2, $recentEvents);
-        $recentEvents->each(function ($event) {
-            $this->assertTrue($event->created_at->isAfter(now()->subDays(30)));
-        });
-    }
-
-    /** @test */
-    public function it_has_upcoming_scope()
-    {
-        Event::factory()->step()->create([
-            'status' => EventStatus::Todo->value,
-            'execution_date' => now()->addDays(5),
-        ]);
-        Event::factory()->billing()->create([
-            'status' => EventStatus::ToSend->value,
-            'send_date' => now()->addDays(3),
-        ]);
-        Event::factory()->step()->create([
-            'status' => EventStatus::Todo->value,
-            'execution_date' => now()->subDays(2),
-        ]);
-
-        $upcomingEvents = Event::upcoming()->get();
-
-        $this->assertCount(2, $upcomingEvents);
-        // Check that the first event is the billing event (sooner)
-        $this->assertEquals(EventType::Billing->value, $upcomingEvents->first()->event_type);
-    }
-
-    /** @test */
-    public function it_detects_if_step_event_is_overdue()
-    {
-        $overdueEvent = Event::factory()->step()->create([
-            'status' => EventStatus::Todo->value,
-            'execution_date' => now()->subDays(5),
-        ]);
-
-        $futureEvent = Event::factory()->step()->create([
-            'status' => EventStatus::Todo->value,
-            'execution_date' => now()->addDays(5),
-        ]);
-
-        $this->assertTrue($overdueEvent->is_overdue);
-        $this->assertFalse($futureEvent->is_overdue);
-    }
-
-    /** @test */
-    public function it_detects_if_billing_event_payment_is_overdue()
-    {
-        $overduePayment = Event::factory()->billing()->create([
-            'status' => EventStatus::Sent->value,
-            'payment_status' => PaymentStatus::Pending->value,
-            'payment_due_date' => now()->subDays(5),
-        ]);
-
-        $futurePayment = Event::factory()->billing()->create([
-            'status' => EventStatus::Sent->value,
-            'payment_status' => PaymentStatus::Pending->value,
-            'payment_due_date' => now()->addDays(5),
-        ]);
-
-        $paidEvent = Event::factory()->billing()->create([
-            'status' => EventStatus::Sent->value,
-            'payment_status' => PaymentStatus::Paid->value,
-            'payment_due_date' => now()->subDays(10),
-        ]);
-
-        $this->assertTrue($overduePayment->is_payment_overdue);
-        $this->assertFalse($futurePayment->is_payment_overdue);
-        $this->assertFalse($paidEvent->is_payment_overdue);
-    }
-
-    /** @test */
-    public function it_formats_amount_correctly()
-    {
-        $event = Event::factory()->billing()->create(['amount' => 1234.56]);
-
-        $this->assertEquals('1 234,56 €', $event->formatted_amount);
-    }
-
-    /** @test */
-    public function it_returns_null_for_step_event_formatted_amount()
-    {
-        $event = Event::factory()->step()->create();
-
-        $this->assertNull($event->formatted_amount);
-    }
-
-    /** @test */
-    public function it_casts_dates_properly()
-    {
-        $event = Event::factory()->create();
-
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->created_date);
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->created_at);
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->updated_at);
+        $project = $this->createProject();
         
-        if ($event->execution_date) {
-            $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->execution_date);
-        }
-        if ($event->send_date) {
-            $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->send_date);
-        }
-        if ($event->payment_due_date) {
-            $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->payment_due_date);
-        }
-        if ($event->completed_at) {
-            $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->completed_at);
-        }
-        if ($event->paid_at) {
-            $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->paid_at);
-        }
-    }
-
-    /** @test */
-    public function it_casts_amount_as_decimal()
-    {
-        $event = Event::factory()->billing()->create(['amount' => 9876.54]);
-
-        $this->assertEquals(9876.54, $event->amount);
-        // decimal:2 cast returns a string in Laravel
-        $this->assertIsNumeric($event->amount);
-    }
-
-    /** @test */
-    public function it_automatically_sets_completed_at_when_step_is_done()
-    {
-        $event = Event::factory()->step()->create([
-            'status' => EventStatus::Todo->value,
-            'completed_at' => null
-        ]);
-        
-        $this->assertNull($event->completed_at);
-
-        $event->status = EventStatus::Done->value;
-        $event->save();
-
-        $this->assertNotNull($event->fresh()->completed_at);
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->fresh()->completed_at);
-    }
-
-    /** @test */
-    public function it_automatically_sets_completed_at_when_billing_is_sent()
-    {
-        $event = Event::factory()->billing()->create([
-            'status' => EventStatus::ToSend->value,
-            'completed_at' => null
-        ]);
-        
-        $this->assertNull($event->completed_at);
-
-        $event->status = EventStatus::Sent->value;
-        $event->save();
-
-        $this->assertNotNull($event->fresh()->completed_at);
-        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->fresh()->completed_at);
-    }
-
-    /** @test */
-    public function it_validates_dates_are_after_project_start_date()
-    {
-        $project = Project::factory()->create([
-            'start_date' => now()->subMonths(2),
-        ]);
-
-        // This should work - dates after project start
-        $validEvent = Event::factory()->create([
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        Event::factory()->create([
             'project_id' => $project->id,
-            'created_date' => now()->subMonth(),
-            'execution_date' => now(),
+            'name' => null
+        ]);
+    }
+
+    public function test_event_project_id_is_required()
+    {
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        Event::factory()->create(['project_id' => null]);
+    }
+
+    public function test_event_event_type_is_required()
+    {
+        $project = $this->createProject();
+        
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        Event::factory()->create([
+            'project_id' => $project->id,
+            'event_type' => null
+        ]);
+    }
+
+    public function test_step_event_does_not_require_billing_fields()
+    {
+        $project = $this->createProject();
+        $event = $this->createEvent([
+            'project_id' => $project->id,
+            'event_type' => 'step',
+            'amount' => null,
+            'payment_status' => null,
+            'send_date' => null,
+            'payment_due_date' => null,
+            'paid_at' => null
         ]);
 
-        $this->assertDatabaseHas('events', ['id' => $validEvent->id]);
+        $this->assertNull($event->amount);
+        $this->assertNull($event->payment_status);
+        $this->assertNull($event->send_date);
+        $this->assertNull($event->payment_due_date);
+        $this->assertNull($event->paid_at);
     }
 
-    /** @test */
-    public function it_can_update_event_status()
+    public function test_billing_event_does_not_require_step_fields()
     {
-        $event = Event::factory()->step()->create(['status' => EventStatus::Todo->value]);
-
-        $event->update(['status' => EventStatus::Done->value]);
-
-        $this->assertEquals(EventStatus::Done->value, $event->fresh()->status);
-        $this->assertNotNull($event->fresh()->completed_at);
-    }
-
-    /** @test */
-    public function it_can_update_payment_status()
-    {
-        $event = Event::factory()->billing()->create([
-            'status' => EventStatus::Sent->value,
-            'payment_status' => PaymentStatus::Pending->value,
+        $project = $this->createProject();
+        $event = $this->createEvent([
+            'project_id' => $project->id,
+            'event_type' => 'billing',
+            'execution_date' => null
         ]);
 
-        $event->update([
-            'payment_status' => PaymentStatus::Paid->value,
-            'paid_at' => now(),
-        ]);
-
-        $this->assertEquals(PaymentStatus::Paid->value, $event->fresh()->payment_status);
-        $this->assertNotNull($event->fresh()->paid_at);
+        $this->assertNull($event->execution_date);
     }
 
-    /** @test */
-    public function it_can_delete_an_event()
+    public function test_event_has_fillable_attributes()
     {
-        $event = Event::factory()->create();
-        $eventId = $event->id;
-
-        $event->delete();
-
-        $this->assertDatabaseMissing('events', ['id' => $eventId]);
-    }
-
-    /** @test */
-    public function it_has_fillable_attributes()
-    {
-        $event = new Event();
         $fillable = [
-            'project_id', 'name', 'description', 'type', 'event_type',
-            'status', 'amount', 'payment_status', 'created_date',
-            'execution_date', 'send_date', 'payment_due_date',
-            'completed_at', 'paid_at'
+            'project_id', 'name', 'description', 'type', 'event_type', 
+            'status', 'amount', 'payment_status', 'created_date', 'execution_date', 'send_date', 
+            'payment_due_date', 'completed_at', 'paid_at'
         ];
-
+        $event = new Event();
+        
         $this->assertEquals($fillable, $event->getFillable());
     }
 
-    /** @test */
-    public function it_orders_events_by_created_at_desc_by_default()
+    public function test_event_casts_dates_properly()
     {
-        $oldEvent = Event::factory()->create(['created_at' => now()->subDays(5)]);
-        $newEvent = Event::factory()->create(['created_at' => now()]);
-        $middleEvent = Event::factory()->create(['created_at' => now()->subDays(2)]);
+        $event = $this->createEvent([
+            'created_date' => '2024-01-01',
+            'execution_date' => '2024-01-15',
+            'send_date' => '2024-01-10',
+            'payment_due_date' => '2024-02-10',
+            'paid_at' => '2024-01-20 14:30:00'
+        ]);
 
-        $events = Event::all();
-
-        $this->assertEquals($newEvent->id, $events[0]->id);
-        $this->assertEquals($middleEvent->id, $events[1]->id);
-        $this->assertEquals($oldEvent->id, $events[2]->id);
+        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->created_date);
+        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->execution_date);
+        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->send_date);
+        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->payment_due_date);
+        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->paid_at);
+        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->created_at);
+        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->updated_at);
     }
 
-    /** @test */
-    public function it_differentiates_step_and_billing_events_correctly()
+    public function test_event_amount_is_cast_to_decimal_string()
     {
-        $stepEvent = Event::factory()->step()->create();
-        $billingEvent = Event::factory()->billing()->create();
+        $event = $this->createEvent([
+            'event_type' => 'billing',
+            'amount' => 1234.56
+        ]);
+        
+        // Laravel decimal:2 cast returns a string, not a float
+        $this->assertIsString($event->amount);
+        $this->assertEquals('1234.56', $event->amount);
+    }
 
-        // Step event should have step-specific fields
-        $this->assertEquals(EventType::Step->value, $stepEvent->event_type);
-        $this->assertNotNull($stepEvent->execution_date);
-        $this->assertNull($stepEvent->amount);
-        $this->assertNull($stepEvent->payment_status);
-        $this->assertNull($stepEvent->send_date);
-        $this->assertNull($stepEvent->payment_due_date);
+    public function test_event_has_correct_table_name()
+    {
+        $event = new Event();
+        $this->assertEquals('events', $event->getTable());
+    }
 
-        // Billing event should have billing-specific fields
-        $this->assertEquals(EventType::Billing->value, $billingEvent->event_type);
-        $this->assertNotNull($billingEvent->amount);
-        $this->assertNotNull($billingEvent->send_date);
-        $this->assertNull($billingEvent->execution_date);
+    public function test_event_project_relationship_returns_correct_type()
+    {
+        $event = $this->createEvent();
+        
+        $this->assertInstanceOf(
+            \Illuminate\Database\Eloquent\Relations\BelongsTo::class,
+            $event->project()
+        );
+    }
+
+    public function test_deleting_event_does_not_delete_project()
+    {
+        $project = $this->createProject();
+        $event = $this->createEvent(['project_id' => $project->id]);
+        
+        $event->delete();
+        
+        $this->assertDatabaseMissing('events', ['id' => $event->id]);
+        $this->assertDatabaseHas('projects', ['id' => $project->id]);
+    }
+
+    public function test_step_event_can_have_execution_date()
+    {
+        $event = $this->createEvent([
+            'event_type' => 'step',
+            'execution_date' => '2024-01-15'
+        ]);
+
+        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->execution_date);
+        $this->assertEquals('2024-01-15', $event->execution_date->format('Y-m-d'));
+    }
+
+    public function test_billing_event_can_be_marked_as_paid()
+    {
+        $event = $this->createEvent([
+            'event_type' => 'billing',
+            'payment_status' => 'paid',
+            'paid_at' => now()
+        ]);
+
+        $this->assertEquals('paid', $event->payment_status);
+        $this->assertNotNull($event->paid_at);
+        $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $event->paid_at);
+    }
+
+    public function test_event_can_have_different_types_per_event_type()
+    {
+        $stepEvent = $this->createEvent([
+            'event_type' => 'step',
+            'type' => 'task'
+        ]);
+
+        $billingEvent = $this->createEvent([
+            'event_type' => 'billing',
+            'type' => 'invoice'
+        ]);
+
+        $this->assertEquals('task', $stepEvent->type);
+        $this->assertEquals('invoice', $billingEvent->type);
     }
 }

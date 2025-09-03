@@ -11,8 +11,14 @@ export interface ProjectDetailData {
         client: {
             id: number
             name: string
+            company?: string
+            email?: string
         }
+        has_overdue_events: boolean
+        has_overdue_payments: boolean
     }
+    // NOUVEAU: Statistiques financières au même niveau que project
+    financialStats: FinancialStats
     events?: Event[]
     related_projects?: ProjectDTO[]
     statistics?: ProjectStatistics
@@ -46,4 +52,19 @@ export interface ProjectActions {
     canChangeStatus: boolean
     canEdit: boolean
     canDelete: boolean
+}
+
+export interface FinancialStats {
+    budget: number
+    totalBilled: number
+    totalPaid: number
+    totalUnpaid: number
+    billsToSend: number
+    upcomingPayments: number
+    overdueUnpaid: number
+    remainingBudget: number | null
+    budgetUsage: {
+        percentage: number
+        isExceeded: boolean
+    }
 }

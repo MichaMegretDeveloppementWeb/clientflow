@@ -1,163 +1,118 @@
 import { computed, type Ref } from 'vue'
-import type { ProjectDetailData } from '@/types/projects/detail'
-import type { Event } from '@/types/projects/events'
-import { useProjectDetailFormatters } from './useProjectDetailFormatters'
 
 /**
  * Composable pour la gestion des statistiques du projet
+ * NOUVEAU: Utilise les données brutes du backend et fait le formatage côté front
  */
-export function useProjectDetailStats(project: Ref<ProjectDetailData['project'] | null>, events: Ref<Event[]>) {
-    const { formatCurrency, getDaysUntil } = useProjectDetailFormatters()
+export function useProjectDetailStats(financialStats: Ref<any | null>) {
+    /**
+     * Fonction de formatage des montants
+     */
+    const formatCurrency = (amount: number | null): string => {
+        if (amount === null || amount === undefined) return '0,00 €'
+        return new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR'
+        }).format(amount).replace(/[\u202F\u00A0]/g, '\u2004')
+    }
 
     /**
-     * Calcule le budget restant
+     * Données des statistiques avec formatage
      */
-    const remainingBudget = computed(() => {
-        if (!project.value?.budget) return 0
-        return project.value.budget - (project.value.total_billed || 0)
-    })
+    const statsData = computed(() => {
+        if (!financialStats.value) return null
 
-    /**
-     * Vérifie si le budget est dépassé
-     */
-    const isBudgetExceeded = computed(() => {
-        return project.value?.budget_exceeded || remainingBudget.value < 0
-    })
+        const stats = financialStats.value
 
-    /**
-     * Calcule le pourcentage d'utilisation du budget
-     */
-    const budgetUsagePercentage = computed(() => {
-        if (!project.value?.budget || project.value.budget === 0) return 0
-        return Math.min(((project.value.total_billed || 0) / project.value.budget) * 100, 100)
+        return {
+            budget: {
+                amount: stats.budget,
+                formatted: formatCurrency(stats.budget)
+            },
+            totalBilled: {
+                amount: stats.totalBilled,
+                formatted: formatCurrency(stats.totalBilled)
+            },
+            totalPaid: {
+                amount: stats.totalPaid,
+                formatted: formatCurrency(stats.totalPaid)
+            },
+            totalUnpaid: {
+                amount: stats.totalUnpaid,
+                formatted: formatCurrency(stats.totalUnpaid)
+            },
+            billsToSend: {
+                amount: stats.billsToSend,
+                formatted: formatCurrency(stats.billsToSend)
+            },
+            upcomingPayments: {
+                amount: stats.upcomingPayments,
+                formatted: formatCurrency(stats.upcomingPayments)
+            },
+            overdueUnpaid: {
+                amount: stats.overdueUnpaid,
+                formatted: formatCurrency(stats.overdueUnpaid)
+            },
+            remainingBudget: {
+                amount: stats.remainingBudget,
+                formatted: formatCurrency(stats.remainingBudget)
+            },
+            budgetUsage: {
+                percentage: stats.budgetUsage.percentage,
+                isExceeded: stats.budgetUsage.isExceeded
+            }
+        }
     })
 
     /**
      * Classes CSS pour le budget restant
      */
-    const remainingBudgetClasses = computed(() => ({
-        'text-gray-900': remainingBudget.value >= 0,
-        'text-red-600': remainingBudget.value < 0
-    }))
+    const remainingBudgetClasses = computed(() => {
+        const remainingAmount = statsData.value?.remainingBudget?.amount ?? 0
+        return {
+            'text-gray-900': remainingAmount >= 0,
+            'text-red-600': remainingAmount < 0
+        }
+    })
 
     /**
      * Classes CSS pour l'icône du budget restant
      */
-    const remainingBudgetIconClasses = computed(() => ({
-        'bg-blue-50': remainingBudget.value >= 0,
-        'bg-red-50': remainingBudget.value < 0
-    }))
+    const remainingBudgetIconClasses = computed(() => {
+        const remainingAmount = statsData.value?.remainingBudget?.amount ?? 0
+        return {
+            'bg-blue-50': remainingAmount >= 0,
+            'bg-red-50': remainingAmount < 0
+        }
+    })
 
     /**
      * Classes CSS pour l'icône du budget restant (couleur)
      */
-    const remainingBudgetIconColorClasses = computed(() => ({
-        'text-blue-600': remainingBudget.value >= 0,
-        'text-red-600': remainingBudget.value < 0
-    }))
+    const remainingBudgetIconColorClasses = computed(() => {
+        const remainingAmount = statsData.value?.remainingBudget?.amount ?? 0
+        return {
+            'text-blue-600': remainingAmount >= 0,
+            'text-red-600': remainingAmount < 0
+        }
+    })
 
     /**
      * Classes CSS pour la barre de progression
      */
-    const progressBarClasses = computed(() => ({
-        'bg-gradient-to-r from-emerald-500 to-emerald-600': !isBudgetExceeded.value,
-        'bg-gradient-to-r from-red-500 to-red-600': isBudgetExceeded.value
-    }))
-
-    /**
-     * Calcule le montant des factures à envoyer (créées mais pas envoyées)
-     */
-    const billsToSend = computed(() => {
-        return events.value
-            .filter(event => event.event_type === 'billing' && event.status === 'to_send')
-            .reduce((total, event) => total + (event.amount || 0), 0)
-    })
-
-    /**
-     * Calcule le montant des paiements à venir (factures envoyées non payées, échéance non dépassée)
-     */
-    const upcomingPayments = computed(() => {
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-        
-        return events.value
-            .filter(event => 
-                event.event_type === 'billing' && 
-                event.status === 'sent' && 
-                event.payment_status === 'pending' &&
-                event.payment_due_date &&
-                getDaysUntil(event.payment_due_date) >= 0
-            )
-            .reduce((total, event) => total + (event.amount || 0), 0)
-    })
-
-    /**
-     * Calcule le montant des factures impayées en retard (factures envoyées, échéance dépassée)
-     */
-    const overdueUnpaid = computed(() => {
-        return events.value
-            .filter(event => 
-                event.event_type === 'billing' && 
-                event.status === 'sent' && 
-                event.payment_status === 'pending' &&
-                event.payment_due_date &&
-                getDaysUntil(event.payment_due_date) < 0
-            )
-            .reduce((total, event) => total + (event.amount || 0), 0)
-    })
-
-    /**
-     * Données des statistiques formatées pour l'affichage
-     */
-    const statsData = computed(() => {
-        if (!project.value) return null
-
+    const progressBarClasses = computed(() => {
+        const isExceeded = statsData.value?.budgetUsage?.isExceeded ?? false
         return {
-            budget: {
-                amount: project.value.budget,
-                formatted: formatCurrency(project.value.budget)
-            },
-            totalBilled: {
-                amount: project.value.total_billed || 0,
-                formatted: formatCurrency(project.value.total_billed || 0)
-            },
-            totalPaid: {
-                amount: project.value.total_paid || 0,
-                formatted: formatCurrency(project.value.total_paid || 0)
-            },
-            totalUnpaid: {
-                amount: project.value.total_unpaid || 0,
-                formatted: formatCurrency(project.value.total_unpaid || 0)
-            },
-            remainingBudget: {
-                amount: remainingBudget.value,
-                formatted: formatCurrency(remainingBudget.value)
-            },
-            budgetUsage: {
-                percentage: Math.round(budgetUsagePercentage.value),
-                isExceeded: isBudgetExceeded.value
-            },
-            // Nouvelles métriques de paiement
-            billsToSend: {
-                amount: billsToSend.value,
-                formatted: formatCurrency(billsToSend.value)
-            },
-            upcomingPayments: {
-                amount: upcomingPayments.value,
-                formatted: formatCurrency(upcomingPayments.value)
-            },
-            overdueUnpaid: {
-                amount: overdueUnpaid.value,
-                formatted: formatCurrency(overdueUnpaid.value)
-            }
+            'bg-gradient-to-r from-emerald-500 to-emerald-600': !isExceeded,
+            'bg-gradient-to-r from-red-500 to-red-600': isExceeded
         }
     })
 
     return {
-        // Données formatées
+        // Données formatées (formatage côté front)
         statsData,
-        
-        // CSS classes
+
+        // CSS classes (basées sur les données backend)
         remainingBudgetClasses,
         remainingBudgetIconClasses,
         remainingBudgetIconColorClasses,

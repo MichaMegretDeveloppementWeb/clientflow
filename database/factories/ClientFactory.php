@@ -55,10 +55,6 @@ class ClientFactory extends Factory
             'address' => $this->generateFrenchAddress($faker),
             'notes' => $faker->optional(0.6)->text(200), // 60% have notes
             'user_id' => User::first()?->id ?? User::factory(),
-            'created_at' => $faker->dateTimeBetween('-2 years', 'now'),
-            'updated_at' => function (array $attributes) use ($faker) {
-                return $faker->dateTimeBetween($attributes['created_at'], 'now');
-            },
         ];
     }
 

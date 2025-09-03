@@ -5,6 +5,7 @@
         <ProjectDetailContainer
             :project="project"
             :events="events"
+            :financial-stats="financialStats"
             :isLoading="isLoading"
             :hasError="hasError"
             :error="error"
@@ -28,6 +29,7 @@ const props = defineProps<ProjectDetailProps>()
 const {
     project,
     events,
+    financialStats,
     isLoading,
     error,
     hasError,

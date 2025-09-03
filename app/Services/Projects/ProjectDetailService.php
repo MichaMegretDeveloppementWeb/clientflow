@@ -52,16 +52,16 @@ class ProjectDetailService
     }
 
     /**
-     * Get project details - COPIE EXACTE de ProjectService::getProjectDetails()
+     * Get project details with financial statistics
      */
     public function getProjectDetails(int $projectId): array
     {
-
-        $project = $this->projectRepository->findWithRelations($projectId, ['client', 'events']);
+        $project = $this->projectRepository->findWithFinancialStats($projectId);
 
         if (! $project) {
             return [
                 'project' => [],
+                'events' => [],
                 'errors' => [
                     'project' => 'Projet introuvable',
                 ],
@@ -70,6 +70,7 @@ class ProjectDetailService
 
         return [
             'project' => $this->transformProjectForDetail($project),
+            'financialStats' => $this->extractFinancialStats($project),
             'events' => $project->events->map(function ($event) {
                 return [
                     'id' => $event->id,
@@ -94,7 +95,7 @@ class ProjectDetailService
     }
 
     /**
-     * Transform Project model for detail page without DTO
+     * Transform Project model for detail page with financial stats
      */
     private function transformProjectForDetail($project): array
     {
@@ -110,6 +111,20 @@ class ProjectDetailService
                     $project->end_date &&
                     $project->end_date->startOfDay()->lt(now()->startOfDay());
 
+        // Calculate budget exceeded
+        $isBudgetExceeded = $project->budget &&
+                           (float) $project->total_billed > (float) $project->budget;
+
+        // Calculate remaining budget
+        $remainingBudget = $project->budget ?
+                          (float) $project->budget - (float) $project->total_billed :
+                          null;
+
+        // Calculate budget usage percentage
+        $budgetUsagePercentage = $project->budget && $project->budget > 0 ?
+                                min(((float) $project->total_billed / (float) $project->budget) * 100, 100) :
+                                0;
+
         return [
             'id' => $project->id,
             'client_id' => $project->client_id,
@@ -124,10 +139,11 @@ class ProjectDetailService
 
             // Labels calculés
             'status_label' => $statusLabels[$project->status] ?? $project->status,
-            'budget_formatted' => $project->budget ? number_format($project->budget, 2, ',', ' ').' €' : null,
 
             // Calculs booléens
             'is_overdue' => $isOverdue,
+            'has_overdue_events' => (bool) $project->has_overdue_events,
+            'has_overdue_payments' => (bool) $project->has_overdue_payments,
 
             // Relations (déjà chargées)
             'client' => $project->client ? [
@@ -136,6 +152,41 @@ class ProjectDetailService
                 'company' => $project->client->company,
                 'email' => $project->client->email,
             ] : null,
+        ];
+    }
+
+    /**
+     * Extract financial statistics from project (raw amounts, no formatting)
+     */
+    private function extractFinancialStats($project): array
+    {
+        // Calculate budget exceeded
+        $isBudgetExceeded = $project->budget && 
+                           (float) $project->total_billed > (float) $project->budget;
+
+        // Calculate remaining budget
+        $remainingBudget = $project->budget ? 
+                          (float) $project->budget - (float) $project->total_billed : 
+                          null;
+
+        // Calculate budget usage percentage
+        $budgetUsagePercentage = $project->budget && $project->budget > 0 ? 
+                                min(((float) $project->total_billed / (float) $project->budget) * 100, 100) : 
+                                0;
+
+        return [
+            'budget' => (float) $project->budget,
+            'totalBilled' => (float) $project->total_billed,
+            'totalPaid' => (float) $project->total_paid,
+            'totalUnpaid' => (float) $project->total_unpaid,
+            'billsToSend' => (float) $project->bills_to_send,
+            'upcomingPayments' => (float) $project->upcoming_payments,
+            'overdueUnpaid' => (float) $project->overdue_unpaid,
+            'remainingBudget' => $remainingBudget,
+            'budgetUsage' => [
+                'percentage' => round($budgetUsagePercentage),
+                'isExceeded' => $isBudgetExceeded,
+            ],
         ];
     }
 }

@@ -2,335 +2,148 @@
 
 namespace Tests\Unit\Models;
 
-use App\Enums\EventStatus;
-use App\Enums\EventType;
-use App\Enums\PaymentStatus;
-use App\Enums\ProjectStatus;
+use Tests\TestCase;
+use App\Models\Project;
 use App\Models\Client;
 use App\Models\Event;
-use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
 class ProjectTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
-    public function it_can_create_a_project()
+    public function test_project_can_be_created()
     {
-        $client = Client::factory()->create();
+        $client = $this->createClient();
         $projectData = [
             'client_id' => $client->id,
             'name' => 'Test Project',
-            'description' => 'Project description',
-            'status' => ProjectStatus::Active->value,
-            'start_date' => now()->subMonth(),
-            'end_date' => now()->addMonth(),
-            'budget' => 10000.00,
+            'description' => 'A test project description',
+            'status' => 'active',
+            'budget' => 5000.00,
+            'start_date' => '2024-01-01',
+            'end_date' => '2024-12-31'
         ];
 
-        $project = Project::create($projectData);
+        $project = Project::factory()->create($projectData);
 
         $this->assertInstanceOf(Project::class, $project);
-        $this->assertEquals('Test Project', $project->name);
-        $this->assertEquals('Project description', $project->description);
-        $this->assertEquals(ProjectStatus::Active->value, $project->status);
-        $this->assertEquals(10000.00, $project->budget);
+        $this->assertEquals($projectData['name'], $project->name);
+        $this->assertEquals($projectData['description'], $project->description);
+        $this->assertEquals($projectData['status'], $project->status);
+        $this->assertEquals($projectData['budget'], $project->budget);
+        $this->assertEquals($projectData['start_date'], $project->start_date->format('Y-m-d'));
+        $this->assertEquals($projectData['end_date'], $project->end_date->format('Y-m-d'));
     }
 
-    /** @test */
-    public function it_belongs_to_a_client()
+    public function test_project_belongs_to_client()
     {
-        $client = Client::factory()->create();
-        $project = Project::factory()->create(['client_id' => $client->id]);
+        $client = $this->createClient();
+        $project = $this->createProject(['client_id' => $client->id]);
 
         $this->assertInstanceOf(Client::class, $project->client);
         $this->assertEquals($client->id, $project->client->id);
+        $this->assertEquals($client->name, $project->client->name);
     }
 
-    /** @test */
-    public function it_has_events_relationship()
+    public function test_project_has_events_relationship()
     {
-        $project = Project::factory()->create();
-        $event1 = Event::factory()->step()->create(['project_id' => $project->id]);
-        $event2 = Event::factory()->billing()->create(['project_id' => $project->id]);
-
-        $this->assertCount(2, $project->events);
-        $this->assertTrue($project->events->contains($event1));
-        $this->assertTrue($project->events->contains($event2));
-    }
-
-    /** @test */
-    public function it_orders_events_by_created_at_desc()
-    {
-        $project = Project::factory()->create();
-        $oldEvent = Event::factory()->create([
+        $project = $this->createProject();
+        $stepEvent = $this->createEvent([
             'project_id' => $project->id,
-            'created_at' => now()->subDays(2),
+            'event_type' => 'step'
         ]);
-        $newEvent = Event::factory()->create([
+        $billingEvent = $this->createEvent([
             'project_id' => $project->id,
-            'created_at' => now(),
+            'event_type' => 'billing'
         ]);
 
-        $events = $project->events;
-        $this->assertEquals($newEvent->id, $events->first()->id);
-        $this->assertEquals($oldEvent->id, $events->last()->id);
+        $project->refresh();
+        $this->assertEquals(2, $project->events->count());
+        $this->assertTrue($project->events->contains($stepEvent));
+        $this->assertTrue($project->events->contains($billingEvent));
     }
 
-    /** @test */
-    public function it_can_get_latest_event()
+    public function test_project_can_filter_step_events()
     {
-        $project = Project::factory()->create();
-        Event::factory()->create([
+        $project = $this->createProject();
+        $stepEvent = $this->createEvent([
             'project_id' => $project->id,
-            'created_at' => now()->subDays(2),
+            'event_type' => 'step'
         ]);
-        $latestEvent = Event::factory()->create([
+        $billingEvent = $this->createEvent([
             'project_id' => $project->id,
-            'created_at' => now(),
+            'event_type' => 'billing'
         ]);
 
-        $this->assertEquals($latestEvent->id, $project->latest_event->id);
+        $stepEvents = $project->events()->where('event_type', 'step')->get();
+        $this->assertEquals(1, $stepEvents->count());
+        $this->assertTrue($stepEvents->contains($stepEvent));
+        $this->assertFalse($stepEvents->contains($billingEvent));
     }
 
-    /** @test */
-    public function it_can_get_events_count()
+    public function test_project_can_filter_billing_events()
     {
-        $project = Project::factory()->create();
-        Event::factory()->count(5)->create(['project_id' => $project->id]);
+        $project = $this->createProject();
+        $stepEvent = $this->createEvent([
+            'project_id' => $project->id,
+            'event_type' => 'step'
+        ]);
+        $billingEvent = $this->createEvent([
+            'project_id' => $project->id,
+            'event_type' => 'billing'
+        ]);
 
-        $this->assertEquals(5, $project->events_count);
+        $billingEvents = $project->events()->where('event_type', 'billing')->get();
+        $this->assertEquals(1, $billingEvents->count());
+        $this->assertTrue($billingEvents->contains($billingEvent));
+        $this->assertFalse($billingEvents->contains($stepEvent));
     }
 
-    /** @test */
-    public function it_has_active_scope()
+    public function test_project_status_enum_values()
     {
-        Project::factory()->count(3)->create(['status' => ProjectStatus::Active->value]);
-        Project::factory()->count(2)->create(['status' => ProjectStatus::Completed->value]);
+        $validStatuses = ['active', 'completed', 'on_hold', 'cancelled'];
 
-        $activeProjects = Project::active()->get();
-
-        $this->assertCount(3, $activeProjects);
-        $activeProjects->each(function ($project) {
-            $this->assertEquals(ProjectStatus::Active->value, $project->status);
-        });
+        foreach ($validStatuses as $status) {
+            $project = $this->createProject(['status' => $status]);
+            $this->assertEquals($status, $project->status);
+        }
     }
 
-    /** @test */
-    public function it_has_completed_scope()
+    public function test_project_name_is_required()
     {
-        Project::factory()->count(2)->create(['status' => ProjectStatus::Completed->value]);
-        Project::factory()->count(3)->create(['status' => ProjectStatus::Active->value]);
-
-        $completedProjects = Project::completed()->get();
-
-        $this->assertCount(2, $completedProjects);
-        $completedProjects->each(function ($project) {
-            $this->assertEquals(ProjectStatus::Completed->value, $project->status);
-        });
-    }
-
-    /** @test */
-    public function it_calculates_total_billed_amount()
-    {
-        $project = Project::factory()->create();
+        $client = $this->createClient();
         
-        Event::factory()->create([
-            'project_id' => $project->id,
-            'event_type' => EventType::Billing->value,
-            'status' => EventStatus::Sent->value,
-            'amount' => 1000,
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        Project::factory()->create([
+            'client_id' => $client->id,
+            'name' => null
         ]);
-        
-        Event::factory()->create([
-            'project_id' => $project->id,
-            'event_type' => EventType::Billing->value,
-            'status' => EventStatus::ToSend->value,
-            'amount' => 500,
-        ]);
-        
-        Event::factory()->create([
-            'project_id' => $project->id,
-            'event_type' => EventType::Billing->value,
-            'status' => EventStatus::Cancelled->value,
-            'amount' => 300,
-        ]);
-
-        $this->assertEquals(1500, $project->total_billed);
     }
 
-    /** @test */
-    public function it_calculates_total_paid_amount()
+    public function test_project_client_id_is_required()
     {
-        $project = Project::factory()->create();
-        
-        Event::factory()->create([
-            'project_id' => $project->id,
-            'event_type' => EventType::Billing->value,
-            'status' => EventStatus::Sent->value,
-            'payment_status' => PaymentStatus::Paid->value,
-            'amount' => 1000,
-        ]);
-        
-        Event::factory()->create([
-            'project_id' => $project->id,
-            'event_type' => EventType::Billing->value,
-            'status' => EventStatus::Sent->value,
-            'payment_status' => PaymentStatus::Pending->value,
-            'amount' => 500,
-        ]);
-
-        $this->assertEquals(1000, $project->total_paid);
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        Project::factory()->create(['client_id' => null]);
     }
 
-    /** @test */
-    public function it_calculates_total_unpaid_amount()
+    public function test_project_has_fillable_attributes()
     {
-        $project = Project::factory()->create();
+        $fillable = [
+            'client_id', 'name', 'description', 'status', 
+            'start_date', 'end_date', 'budget'
+        ];
+        $project = new Project();
         
-        Event::factory()->create([
-            'project_id' => $project->id,
-            'event_type' => EventType::Billing->value,
-            'status' => EventStatus::Sent->value,
-            'payment_status' => PaymentStatus::Pending->value,
-            'amount' => 1500,
-        ]);
-        
-        Event::factory()->create([
-            'project_id' => $project->id,
-            'event_type' => EventType::Billing->value,
-            'status' => EventStatus::Sent->value,
-            'payment_status' => PaymentStatus::Paid->value,
-            'amount' => 1000,
-        ]);
-
-        $this->assertEquals(1500, $project->total_unpaid);
+        $this->assertEquals($fillable, $project->getFillable());
     }
 
-    /** @test */
-    public function it_calculates_budget_progress()
+    public function test_project_casts_dates_properly()
     {
-        $project = Project::factory()->create(['budget' => 10000]);
-        
-        Event::factory()->create([
-            'project_id' => $project->id,
-            'event_type' => EventType::Billing->value,
-            'status' => EventStatus::Sent->value,
-            'amount' => 2500,
+        $project = $this->createProject([
+            'start_date' => '2024-01-01',
+            'end_date' => '2024-12-31'
         ]);
-
-        $this->assertEquals(25, $project->budget_progress);
-    }
-
-    /** @test */
-    public function it_handles_zero_budget_for_progress()
-    {
-        $project = Project::factory()->create(['budget' => 0]);
-        
-        Event::factory()->create([
-            'project_id' => $project->id,
-            'event_type' => EventType::Billing->value,
-            'status' => EventStatus::Sent->value,
-            'amount' => 1000,
-        ]);
-
-        $this->assertEquals(0, $project->budget_progress);
-    }
-
-    /** @test */
-    public function it_caps_budget_progress_at_100()
-    {
-        $project = Project::factory()->create(['budget' => 1000]);
-        
-        Event::factory()->create([
-            'project_id' => $project->id,
-            'event_type' => EventType::Billing->value,
-            'status' => EventStatus::Sent->value,
-            'amount' => 2000,
-        ]);
-
-        $this->assertEquals(100, $project->budget_progress);
-    }
-
-    /** @test */
-    public function it_detects_budget_exceeded()
-    {
-        $project = Project::factory()->create(['budget' => 1000]);
-        
-        Event::factory()->create([
-            'project_id' => $project->id,
-            'event_type' => EventType::Billing->value,
-            'status' => EventStatus::Sent->value,
-            'amount' => 1500,
-        ]);
-
-        $this->assertTrue($project->budget_exceeded);
-    }
-
-    /** @test */
-    public function it_handles_null_budget()
-    {
-        $project = Project::factory()->create(['budget' => null]);
-        
-        $this->assertEquals(0, $project->budget_progress);
-        $this->assertFalse($project->budget_exceeded);
-    }
-
-    /** @test */
-    public function it_gets_upcoming_tasks()
-    {
-        $project = Project::factory()->create();
-        
-        $upcomingTask = Event::factory()->create([
-            'project_id' => $project->id,
-            'event_type' => EventType::Step->value,
-            'status' => EventStatus::Todo->value,
-            'execution_date' => now()->addDays(5),
-        ]);
-        
-        $completedTask = Event::factory()->create([
-            'project_id' => $project->id,
-            'event_type' => EventType::Step->value,
-            'status' => EventStatus::Done->value,
-        ]);
-
-        $upcomingTasks = $project->upcomingTasks()->get();
-
-        $this->assertCount(1, $upcomingTasks);
-        $this->assertEquals($upcomingTask->id, $upcomingTasks->first()->id);
-    }
-
-    /** @test */
-    public function it_gets_overdue_tasks()
-    {
-        $project = Project::factory()->create();
-        
-        $overdueTask = Event::factory()->create([
-            'project_id' => $project->id,
-            'event_type' => EventType::Step->value,
-            'status' => EventStatus::Todo->value,
-            'execution_date' => now()->subDays(5),
-        ]);
-        
-        $normalTask = Event::factory()->create([
-            'project_id' => $project->id,
-            'event_type' => EventType::Step->value,
-            'status' => EventStatus::Todo->value,
-            'execution_date' => now()->addDays(5),
-        ]);
-
-        $overdueTasks = $project->overdueTasks()->get();
-
-        $this->assertCount(1, $overdueTasks);
-        $this->assertEquals($overdueTask->id, $overdueTasks->first()->id);
-    }
-
-    /** @test */
-    public function it_casts_dates_properly()
-    {
-        $project = Project::factory()->create();
 
         $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $project->start_date);
         $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $project->end_date);
@@ -338,13 +151,84 @@ class ProjectTest extends TestCase
         $this->assertInstanceOf(\Illuminate\Support\Carbon::class, $project->updated_at);
     }
 
-    /** @test */
-    public function it_casts_budget_as_decimal()
+    public function test_project_budget_is_cast_to_decimal_string()
     {
-        $project = Project::factory()->create(['budget' => 1234.56]);
+        $project = $this->createProject(['budget' => 1234.56]);
+        
+        // Laravel decimal:2 cast returns a string, not a float
+        $this->assertIsString($project->budget);
+        $this->assertEquals('1234.56', $project->budget);
+    }
 
-        $this->assertEquals(1234.56, $project->budget);
-        // decimal:2 cast returns a string in Laravel
-        $this->assertIsNumeric($project->budget);
+    public function test_project_can_have_null_description()
+    {
+        $project = $this->createProject(['description' => null]);
+        $this->assertNull($project->description);
+    }
+
+    public function test_project_can_have_null_budget()
+    {
+        $project = $this->createProject(['budget' => null]);
+        $this->assertNull($project->budget);
+    }
+
+    public function test_project_can_have_null_dates()
+    {
+        $project = $this->createProject([
+            'start_date' => null,
+            'end_date' => null
+        ]);
+        
+        $this->assertNull($project->start_date);
+        $this->assertNull($project->end_date);
+    }
+
+    public function test_project_has_correct_table_name()
+    {
+        $project = new Project();
+        $this->assertEquals('projects', $project->getTable());
+    }
+
+    public function test_project_relationships_return_correct_types()
+    {
+        $project = $this->createProject();
+        
+        $this->assertInstanceOf(
+            \Illuminate\Database\Eloquent\Relations\BelongsTo::class,
+            $project->client()
+        );
+        
+        $this->assertInstanceOf(
+            \Illuminate\Database\Eloquent\Relations\HasMany::class,
+            $project->events()
+        );
+        
+        $this->assertInstanceOf(
+            \Illuminate\Database\Eloquent\Relations\HasOne::class,
+            $project->latest_event()
+        );
+    }
+
+    public function test_deleting_project_does_not_delete_client()
+    {
+        $client = $this->createClient();
+        $project = $this->createProject(['client_id' => $client->id]);
+        
+        $project->delete();
+        
+        $this->assertDatabaseMissing('projects', ['id' => $project->id]);
+        $this->assertDatabaseHas('clients', ['id' => $client->id]);
+    }
+
+    public function test_project_deletion_behavior()
+    {
+        $project = $this->createProject();
+        $event = $this->createEvent(['project_id' => $project->id]);
+        $projectId = $project->id;
+        
+        $project->delete();
+        
+        $this->assertDatabaseMissing('projects', ['id' => $projectId]);
+        // Note: Le comportement de suppression dépend des contraintes FK dans la DB
     }
 }

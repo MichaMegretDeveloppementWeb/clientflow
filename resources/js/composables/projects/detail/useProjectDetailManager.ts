@@ -14,6 +14,7 @@ export function useProjectDetailManager(projectId: number, skeletonData: Project
     // Computed
     const project = computed(() => state.data?.project ?? null)
     const events = computed(() => state.data?.events ?? [])
+    const financialStats = computed(() => state.data?.financialStats ?? null)
     const isLoading = computed(() => state.isLoading)
     const error = computed(() => state.error)
     const hasError = computed(() => !!state.error)
@@ -79,6 +80,7 @@ export function useProjectDetailManager(projectId: number, skeletonData: Project
         state,
         project,
         events,
+        financialStats,
         isLoading,
         error,
         hasError,

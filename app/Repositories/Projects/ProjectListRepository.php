@@ -20,6 +20,7 @@ class ProjectListRepository implements ProjectListRepositoryInterface
         // Requête optimisée : réutiliser withOptimizedRelations qui est déjà bien fait
         // mais s'assurer que toutes les données nécessaires sont pré-calculées
         $query = Project::select('projects.*')
+            ->whereRelation('client', 'user_id', auth()->id())
             ->with([
                 'client:id,name,company,email',
             ])

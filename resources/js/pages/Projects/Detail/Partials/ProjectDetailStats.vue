@@ -98,24 +98,26 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue'
 import { Card, CardContent } from '@/components/ui/card'
-import { toRef } from 'vue'
-import type { ProjectDetailData } from '@/types/projects/detail'
-import type { Event } from '@/types/projects/events'
 import { useProjectDetailStats } from '@/composables/projects/detail/useProjectDetailStats'
+import { computed } from 'vue'
 
 interface Props {
-    project: ProjectDetailData['project']
-    events: Event[]
+    project: any
+    financialStats: any
 }
 
 const props = defineProps<Props>()
 
-// Utiliser le composable pour la logique des statistiques
+// Créer une ref réactive pour financialStats
+const financialStatsRef = computed(() => props.financialStats)
+
+// Utiliser le composable pour la logique des statistiques avec formatage côté front
 const {
     statsData,
     remainingBudgetClasses,
     remainingBudgetIconClasses,
     remainingBudgetIconColorClasses,
     progressBarClasses
-} = useProjectDetailStats(toRef(props, 'project'), toRef(props, 'events'))
+} = useProjectDetailStats(financialStatsRef)
+
 </script>

@@ -15,9 +15,11 @@ class EventListRepository implements EventListRepositoryInterface
     public function paginate(int $perPage, array $filters = []): LengthAwarePaginator
     {
         // Requête optimisée : 1 seule requête avec toutes les relations
+        // Filtrer d'abord par utilisateur connecté
         $query = Event::select([
             'events.*',
         ])
+            ->whereRelation('project.client', 'user_id', auth()->id())
             ->with([
                 'project:id,name,client_id,status,budget',
                 'project.client:id,name,company,email',
@@ -41,22 +43,29 @@ class EventListRepository implements EventListRepositoryInterface
     public function getGlobalStatistics(): array
     {
         // Total événements
-        $totalEvents = Event::count();
+        $totalEvents = Event::whereRelation('project.client', 'user_id', auth()->id())->count();
 
-        // Événements à faire (todo + to_send)
-        $todoEvents = Event::whereIn('status', ['todo', 'to_send'])->count();
+        // Événements de type step
+        $stepEvents = Event::whereRelation('project.client', 'user_id', auth()->id())
+            ->where('event_type', 'step')
+            ->count();
 
-        // Événements terminés (done + sent)
-        $doneEvents = Event::whereIn('status', ['done', 'sent'])->count();
+        // Événements de type billing
+        $billingEvents = Event::whereRelation('project.client', 'user_id', auth()->id())
+            ->where('event_type', 'billing')
+            ->count();
 
-        // Événements en retard
-        $overdueEvents = Event::overdue()->count();
+        // Total revenue (somme des montants des événements de facturation)
+        $totalRevenue = Event::whereRelation('project.client', 'user_id', auth()->id())
+            ->where('event_type', 'billing')
+            ->whereNotIn('status', ['cancelled'])
+            ->sum('amount') ?? 0;
 
         return [
-            'total' => $totalEvents,
-            'todo' => $todoEvents,
-            'done' => $doneEvents,
-            'overdue' => $overdueEvents,
+            'totalEvents' => $totalEvents,
+            'stepEvents' => $stepEvents,
+            'billingEvents' => $billingEvents,
+            'totalRevenue' => $totalRevenue,
         ];
     }
 
@@ -65,6 +74,11 @@ class EventListRepository implements EventListRepositoryInterface
         // Filter by event type
         if (! empty($filters['event_type'])) {
             $query->where('event_type', $filters['event_type']);
+        }
+
+        // Filter by type (meeting, task, invoice, etc.)
+        if (! empty($filters['type'])) {
+            $query->where('type', $filters['type']);
         }
 
         // Filter by status
