@@ -40,7 +40,6 @@ return [
     // Social media links
     'social' => [
         'x' => env('SOCIAL_X', 'https://x.com/stone_app'),
-        'twitter' => env('SOCIAL_TWITTER', 'https://twitter.com/stone_app'),
         'facebook' => env('SOCIAL_FACEBOOK', 'https://facebook.com/stone.app'),
         'instagram' => env('SOCIAL_INSTAGRAM', 'https://instagram.com/stone.app'),
         'linkedin' => env('SOCIAL_LINKEDIN', 'https://linkedin.com/company/stone-app'),
