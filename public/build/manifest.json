@@ -1,0 +1,27 @@
+{
+  "node_modules/chart.js/dist/chart.js": {
+    "file": "assets/chart-CXkAdggo.js",
+    "name": "chart",
+    "src": "node_modules/chart.js/dist/chart.js",
+    "isDynamicEntry": true
+  },
+  "resources/images/stone_logo.webp": {
+    "file": "assets/stone_logo-DtC7vfd2.webp",
+    "src": "resources/images/stone_logo.webp"
+  },
+  "resources/js/app.ts": {
+    "file": "assets/app-CiWr_pBv.js",
+    "name": "app",
+    "src": "resources/js/app.ts",
+    "isEntry": true,
+    "dynamicImports": [
+      "node_modules/chart.js/dist/chart.js"
+    ],
+    "css": [
+      "assets/app-DkAu49LW.css"
+    ],
+    "assets": [
+      "assets/stone_logo-DtC7vfd2.webp"
+    ]
+  }
+}
