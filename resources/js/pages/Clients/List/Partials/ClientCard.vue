@@ -96,10 +96,10 @@
                         @click.stop
                         title="Actions"
                     >
-                        <Icon name="more-horizontal" class="h-3.5 w-3.5" />
+                        <Icon name="more-horizontal" class="h-3.5 w-3.5 md:h-5 md:w-5" />
                     </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" class="w-40">
+                <DropdownMenuContent align="end" class="w-max">
                     <DropdownMenuItem @click.stop="handleView">
                         <Icon name="external-link" class="mr-2 h-3.5 w-3.5" />
                         Voir le profil
@@ -107,6 +107,10 @@
                     <DropdownMenuItem @click.stop="handleEdit">
                         <Icon name="edit" class="mr-2 h-3.5 w-3.5" />
                         Modifier
+                    </DropdownMenuItem>
+                    <DropdownMenuItem @click.stop="handleAddProject" class="text-green-600 focus:text-green-600 focus:bg-green-50">
+                        <Icon name="plus-circle" class="mr-2 h-3.5 w-3.5 text-green-600" />
+                        Ajouter un projet
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -189,6 +193,10 @@ const handleView = () => {
 
 const handleEdit = () => {
     router.get(route('clients.edit', { client: props.client.id }))
+}
+
+const handleAddProject = () => {
+    router.get(route('projects.create', { client_id: props.client.id }))
 }
 
 const handleDelete = () => {

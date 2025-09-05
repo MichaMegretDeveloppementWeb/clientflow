@@ -63,8 +63,6 @@ class EventListService
                 'todo' => 0,
                 'done' => 0,
                 'overdue' => 0,
-                'step_events' => 0,
-                'billing_events' => 0,
             ],
             'projects' => [],
             'clients' => [],

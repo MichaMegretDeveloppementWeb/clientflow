@@ -3,7 +3,7 @@
         :href="link"
         class="group h-full sm:col-span-2 lg:col-span-1"
     >
-        <Card class="h-full rounded-xl border border-gray-200/60 bg-white shadow-sm transition-all duration-300 group-hover:-translate-y-0.5 group-hover:border-emerald-200 group-hover:shadow-md">
+        <Card class="h-full rounded-xl border border-gray-200/60 bg-white shadow-sm transition-all duration-300 group-hover:-translate-y-0.5 group-hover:border-emerald-200 group-hover:shadow-md py-0">
             <CardContent class="flex h-full flex-col p-4 sm:p-6">
                 <div class="flex flex-1 items-start justify-between">
                     <div class="flex h-full flex-1 flex-col justify-between">

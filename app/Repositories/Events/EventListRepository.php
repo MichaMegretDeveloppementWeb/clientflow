@@ -42,30 +42,39 @@ class EventListRepository implements EventListRepositoryInterface
      */
     public function getGlobalStatistics(): array
     {
+        // Base query avec filtrage par utilisateur connecté
+        $baseQuery = Event::whereRelation('project.client', 'user_id', auth()->id());
+
         // Total événements
-        $totalEvents = Event::whereRelation('project.client', 'user_id', auth()->id())->count();
+        $total = (clone $baseQuery)->count();
 
-        // Événements de type step
-        $stepEvents = Event::whereRelation('project.client', 'user_id', auth()->id())
-            ->where('event_type', 'step')
-            ->count();
+        // Événements à faire (todo + to_send selon la logique existante du filtre)
+        $todo = (clone $baseQuery)->whereIn('status', ['todo', 'to_send'])->count();
 
-        // Événements de type billing
-        $billingEvents = Event::whereRelation('project.client', 'user_id', auth()->id())
-            ->where('event_type', 'billing')
-            ->count();
+        // Événements terminés (done + sent)
+        $done = (clone $baseQuery)->whereIn('status', ['done', 'sent'])->count();
 
-        // Total revenue (somme des montants des événements de facturation)
-        $totalRevenue = Event::whereRelation('project.client', 'user_id', auth()->id())
-            ->where('event_type', 'billing')
-            ->whereNotIn('status', ['cancelled'])
-            ->sum('amount') ?? 0;
+        // Événements en retard
+        $overdue = (clone $baseQuery)->where(function ($query) {
+            $query->where(function ($subQuery) {
+                // Step events en retard
+                $subQuery->where('event_type', 'step')
+                    ->where('status', 'todo')
+                    ->whereDate('execution_date', '<', now()->toDateString());
+            })
+            ->orWhere(function ($subQuery) {
+                // Billing events en retard (à envoyer mais date d'envoi dépassée)
+                $subQuery->where('event_type', 'billing')
+                    ->where('status', 'to_send')
+                    ->whereDate('send_date', '<', now()->toDateString());
+            });
+        })->count();
 
         return [
-            'totalEvents' => $totalEvents,
-            'stepEvents' => $stepEvents,
-            'billingEvents' => $billingEvents,
-            'totalRevenue' => $totalRevenue,
+            'total' => $total,
+            'todo' => $todo,
+            'done' => $done,
+            'overdue' => $overdue,
         ];
     }
 

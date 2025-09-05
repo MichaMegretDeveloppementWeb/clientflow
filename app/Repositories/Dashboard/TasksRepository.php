@@ -14,7 +14,7 @@ class TasksRepository implements TasksRepositoryInterface
      * Get upcoming tasks with optional urgency filter
      * OPTIMIZED: Direct JOIN queries with minimal data selection
      */
-    public function getUpcomingTasks(int $userId, bool $urgentOnly = false, int $limit = 100): Collection
+    public function getUpcomingTasks(int $userId, bool $urgentOnly = false, int $limit = 200): Collection
     {
         $query = Event::select([
             'events.id', 'events.name', 'events.description', 'events.event_type',

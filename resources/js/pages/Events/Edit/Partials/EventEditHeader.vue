@@ -21,9 +21,9 @@
                     Événements
                 </Link>
                 <div class="h-4 w-px bg-gray-300"></div>
-                <Link 
+                <Link
                     v-if="event"
-                    :href="route('events.show', event.id)" 
+                    :href="route('events.show', event.id)"
                     class="text-gray-500 transition-colors hover:text-gray-700"
                 >
                     {{ event.name }}
@@ -37,7 +37,7 @@
         <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <div class="mb-2 flex items-center gap-3">
-                    <div class="rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 p-2 shadow-sm">
+                    <div class="rounded-xl bg-gradient-to-br from-green-600 to-green-700 p-2 shadow-sm">
                         <Icon name="edit" class="h-6 w-6 text-white" />
                     </div>
                     <div>

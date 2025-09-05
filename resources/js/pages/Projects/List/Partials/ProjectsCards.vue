@@ -16,6 +16,7 @@
                     @project-click="handleProjectClick"
                     @view="handleView"
                     @edit="handleEdit"
+                    @add-event="handleAddEvent"
                     @delete="handleDelete"
                 />
             </div>
@@ -58,6 +59,10 @@ const handleView = (project: ProjectDTO) => {
 
 const handleEdit = (project: ProjectDTO) => {
     router.visit(route('projects.edit', { project: project.id }))
+}
+
+const handleAddEvent = (project: ProjectDTO) => {
+    router.visit(route('events.create', { project_id: project.id }))
 }
 
 const handleDelete = (projectId: number) => {

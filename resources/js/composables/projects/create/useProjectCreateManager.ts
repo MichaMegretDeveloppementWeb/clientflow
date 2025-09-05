@@ -30,6 +30,12 @@ export function useProjectCreateManager(
         return data.selectedClientId || null
     })
 
+    const selectedClient = computed(() => {
+        if (state.isLoading || !state.data || !selectedClientId.value) return null
+        const data = state.data as ProjectCreateData
+        return data.clients?.find(client => client.id.toString() === selectedClientId.value.toString()) || null
+    })
+
     const isLoading = computed(() => state.isLoading)
     const error = computed(() => state.error)
     const hasError = computed(() => !!state.error)
@@ -71,6 +77,7 @@ export function useProjectCreateManager(
         state,
         clients,
         selectedClientId,
+        selectedClient,
         isLoading,
         error,
         hasError,

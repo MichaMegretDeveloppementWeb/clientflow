@@ -1,14 +1,11 @@
 <template>
-    <Card class="group relative overflow-hidden rounded-2xl border-0 bg-white shadow-xl shadow-gray-900/5 ring-1 ring-gray-900/5 transition-all duration-300 hover:shadow-2xl hover:shadow-gray-900/10 self-stretch w-full lg:w-[65%]">
+    <Card class="group relative overflow-hidden rounded-2xl border-0 bg-white shadow-xl shadow-gray-900/5 ring-1 ring-gray-900/5 transition-all duration-300 hover:shadow-2xl hover:shadow-gray-900/10 self-stretch w-full lg:w-[50%] pb-0">
         <!-- Gradient overlay -->
         <div class="absolute inset-0 bg-gradient-to-br from-blue-50/20 via-transparent to-purple-50/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
 
         <CardHeader class="relative z-10 pb-2">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/25">
-                        <OptimizedIcon name="activity" :size="20" class="text-white" preload />
-                    </div>
                     <div class="space-y-1">
                         <CardTitle class="text-xl font-bold text-gray-900">
                             Activité récente
@@ -25,12 +22,11 @@
                             {{ recentActivitiesCount }} entrées
                         </span>
                     </div>
-                    <div class="h-2 w-2 rounded-full bg-green-500 animate-pulse" v-if="!isLoading"></div>
                 </div>
             </div>
         </CardHeader>
 
-        <CardContent class="relative z-10 overflow-hidden px-6 pb-6">
+        <CardContent class="relative z-10 overflow-hidden px-4 pb-6">
             <!-- Skeleton moderne sans loader -->
             <div v-if="isLoading" class="px-6 pb-6 space-y-3">
                 <div v-for="i in 5" :key="i" class="animate-pulse">
@@ -93,7 +89,7 @@
             <!-- Liste des activités moderne avec pagination -->
             <div v-else class="space-y-0">
                 <!-- Contrôles de pagination -->
-                <div v-if="totalPages > 1" class="flex items-center justify-between mb-4 px-4 py-2 bg-gray-50 rounded-xl max-w-[30em] mx-auto">
+                <div v-if="totalPages > 1" class="flex items-center justify-between mb-4 px-4 py-2 bg-gray-50 rounded-xl mx-auto">
                     <button
                         @click="goToPrevPage"
                         :disabled="!hasPrevPage"
@@ -128,7 +124,7 @@
                 </div>
 
                 <!-- Liste des activités paginées -->
-                <div class="p-2 space-y-3 mt-2">
+                <div class="p-2 space-y-0 mt-2">
                     <ActivityItem
                         v-for="activity in paginatedActivities"
                         :key="activity.id"

@@ -31,10 +31,11 @@
             <!-- Données réelles -->
             <template v-else-if="event">
                 <!-- Informations principales -->
-                <div class="grid gap-4">
+                <div class="flex items-center flex-wrap gap-4">
+
                     <!-- Catégorie -->
-                    <div v-if="event.type" class="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
-                        <div class="flex items-center gap-3">
+                    <div v-if="event.type" class="grow-1 flex items-center justify-between gap-4 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
+                        <div class="flex items-center gap-2">
                             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
                                 <Icon name="tag" class="h-4 w-4 text-blue-600" />
                             </div>
@@ -46,8 +47,8 @@
                     </div>
 
                     <!-- Dernière modification -->
-                    <div class="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-100">
-                        <div class="flex items-center gap-3">
+                    <div class="grow-1 flex items-center justify-between gap-4 p-3 rounded-lg bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-100">
+                        <div class="flex items-center gap-2">
                             <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
                                 <Icon name="clock" class="h-4 w-4 text-gray-600" />
                             </div>
@@ -57,6 +58,7 @@
                             {{ formatDate(event.updated_at) }}
                         </span>
                     </div>
+
                 </div>
 
                 <!-- Description -->

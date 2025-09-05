@@ -2,7 +2,7 @@
     <Head :title="pageTitle" />
 
     <AppLayout>
-        <div class="space-y-8">
+        <div class="space-y-8 mx-auto max-w-7xl">
             <!-- Header -->
             <EventEditHeader
                 :event="event"

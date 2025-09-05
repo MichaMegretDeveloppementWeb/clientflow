@@ -124,10 +124,10 @@
                             @click.stop
                             title="Actions"
                         >
-                            <Icon name="more-horizontal" class="h-3.5 w-3.5" />
+                            <Icon name="more-horizontal" class="h-3.5 w-3.5 md:h-5 md:w-5" />
                         </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" class="w-40">
+                    <DropdownMenuContent align="end" class="w-max">
                         <DropdownMenuItem @click.stop="handleView">
                             <Icon name="external-link" class="mr-2 h-3.5 w-3.5" />
                             Voir l'événement

@@ -1,60 +1,102 @@
 <template>
-    <div class="mx-auto max-w-6xl">
-        <!-- Loading State -->
-        <div v-if="isLoading" class="grid gap-8 md:grid-cols-12">
-            <div class="md:col-span-8">
-                <Card class="border border-gray-200 bg-white shadow-sm">
-                    <CardContent class="p-6">
+    <div class="mx-auto max-w-[100em]">
+        <div class="grid gap-8 form:grid-cols-12">
+            <!-- Loading State -->
+            <Card v-if="isLoading" class="border border-gray-200 bg-white shadow-sm form:col-span-8">
+                <CardContent class="p-6">
+                    <div class="space-y-8">
+                        <!-- Section Informations de base -->
                         <div class="space-y-6">
-                            <div v-for="i in 6" :key="i" class="space-y-3">
-                                <div class="h-4 bg-gray-200 rounded animate-pulse w-20"></div>
-                                <div class="h-10 bg-gray-200 rounded animate-pulse"></div>
+                            <div class="border-b border-gray-100 pb-4">
+                                <div class="h-6 w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
+                                <div class="h-4 w-64 bg-gray-200 rounded animate-pulse"></div>
                             </div>
-                            <div class="flex justify-end space-x-3">
-                                <div class="h-10 bg-gray-200 rounded animate-pulse w-20"></div>
-                                <div class="h-10 bg-gray-200 rounded animate-pulse w-32"></div>
+                            <div class="grid gap-6 sm:grid-cols-2">
+                                <div class="space-y-3">
+                                    <div class="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+                                    <div class="h-12 bg-gray-200 rounded animate-pulse"></div>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                                    <div class="h-12 bg-gray-200 rounded animate-pulse"></div>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
+                                <div class="h-12 bg-gray-200 rounded animate-pulse"></div>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
-            </div>
-            <div class="md:col-span-4 space-y-6">
-                <div class="h-40 bg-gray-200 rounded animate-pulse"></div>
-                <div class="h-32 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-        </div>
 
-        <!-- Error State -->
-        <div v-else-if="hasError" class="rounded-md bg-red-50 p-4">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <Icon name="alert-circle" class="h-5 w-5 text-red-400" />
-                </div>
-                <div class="ml-3">
-                    <h3 class="text-sm font-medium text-red-800">
-                        Impossible de charger le formulaire
-                    </h3>
-                    <div class="mt-2 text-sm text-red-700">
-                        <p>Une erreur est survenue. Veuillez actualiser la page.</p>
+                        <!-- Section Planification -->
+                        <div class="space-y-6">
+                            <div class="border-b border-gray-100 pb-4">
+                                <div class="h-6 w-32 bg-gray-200 rounded animate-pulse mb-2"></div>
+                                <div class="h-4 w-56 bg-gray-200 rounded animate-pulse"></div>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="h-4 w-28 bg-gray-200 rounded animate-pulse"></div>
+                                <div class="h-24 bg-gray-200 rounded animate-pulse"></div>
+                            </div>
+                            <div class="grid gap-6 sm:grid-cols-2">
+                                <div class="space-y-3">
+                                    <div class="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+                                    <div class="h-12 bg-gray-200 rounded animate-pulse"></div>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="h-4 w-36 bg-gray-200 rounded animate-pulse"></div>
+                                    <div class="h-12 bg-gray-200 rounded animate-pulse"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex flex-col items-center justify-between gap-4 border-t border-gray-100 pt-6 sm:flex-row">
+                            <div class="flex gap-2">
+                                <div class="h-12 w-24 bg-gray-200 rounded animate-pulse"></div>
+                            </div>
+                            <div class="h-12 w-32 bg-gray-200 rounded animate-pulse"></div>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
+                </CardContent>
+            </Card>
 
-        <!-- Main Form -->
-        <div v-else class="grid gap-8 md:grid-cols-12">
-            <!-- Formulaire principal -->
-            <Card class="border border-gray-200 bg-white shadow-sm md:col-span-8">
+            <!-- Error State -->
+            <Card v-else-if="hasError" class="border border-red-200 bg-red-50 shadow-sm form:col-span-8">
                 <CardContent class="p-6">
-                    <form @submit.prevent="submit" class="space-y-6">
+                    <div class="flex items-center justify-center py-12">
+                        <div class="text-center">
+                            <Icon name="alert-triangle" class="mx-auto h-12 w-12 text-red-400 mb-4" />
+                            <h3 class="text-lg font-medium text-red-900 mb-2">
+                                Erreur de chargement
+                            </h3>
+                            <p class="text-sm text-red-700 mb-4">
+                                Impossible de charger les données nécessaires à la création du projet.
+                            </p>
+                            <Button
+                                variant="outline"
+                                @click="reloadPage"
+                                class="border-red-300 text-red-700 hover:bg-red-100"
+                            >
+                                <Icon name="refresh-cw" class="mr-2 h-4 w-4" />
+                                Réessayer
+                            </Button>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <!-- Formulaire principal -->
+            <Card v-else class="border border-gray-200 bg-white shadow-sm form:col-span-8">
+                <CardContent class="p-6">
+                    <form @submit.prevent="submit" class="space-y-8">
                         <!-- General errors -->
-                        <div v-if="form.errors.general" class="rounded-md bg-red-50 p-4">
+                        <div v-if="form.errors.general" class="rounded-xl bg-red-50 border border-red-200 p-4">
                             <div class="flex">
                                 <div class="flex-shrink-0">
                                     <Icon name="alert-circle" class="h-5 w-5 text-red-400" />
                                 </div>
                                 <div class="ml-3">
-                                    <div class="text-sm text-red-700">
+                                    <div class="text-sm text-red-700 font-medium">
                                         {{ form.errors.general }}
                                     </div>
                                 </div>
@@ -62,240 +104,298 @@
                         </div>
 
                         <!-- Section Informations de base -->
-                        <div class="space-y-6">
-                            <div class="border-b border-gray-100 pb-4">
-                                <h3 class="mb-1 text-lg font-semibold text-gray-900">Informations de base</h3>
+                        <div class="space-y-8">
+                            <div class="space-y-1">
+                                <h3 class="text-xl font-semibold text-gray-900 tracking-tight">Informations de base</h3>
                                 <p class="text-sm text-gray-600">Les informations essentielles de votre projet</p>
                             </div>
 
-                            <div class="grid gap-6 sm:grid-cols-2">
-                                <!-- Client -->
-                                <div class="space-y-3">
-                                    <Label for="client_id" class="text-sm font-medium text-gray-700">
-                                        Client <span class="text-red-500">*</span>
-                                    </Label>
+                            <div class="space-y-6">
+                                <!-- Sélecteur de client (si pas de client présélectionné) -->
+                                <div v-if="!selectedClient" class="space-y-2">
+                                    <Label for="client_id" class="text-sm font-medium text-gray-900">Client *</Label>
                                     <div class="relative">
-                                        <Icon name="user" class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                                        <Icon name="user" class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 transform text-blue-400 pointer-events-none" />
                                         <select
                                             id="client_id"
                                             v-model="form.client_id"
                                             required
-                                            class="h-11 w-full rounded-md border border-gray-200 bg-white px-3 py-2 pl-10 text-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:ring-offset-0"
-                                            :class="{ 'border-red-300': form.errors.client_id }"
+                                            class="h-12 w-full appearance-none rounded-lg border border-gray-200 bg-white py-2 pr-10 pl-11 text-sm transition-all focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 hover:border-gray-300"
+                                            :class="{ 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/10': form.errors.client_id }"
                                         >
                                             <option value="">Sélectionner un client</option>
                                             <option v-for="client in clients" :key="client.id" :value="client.id">
                                                 {{ client.name }}{{ client.company ? ` - ${client.company}` : '' }}
                                             </option>
                                         </select>
+                                        <Icon name="chevron-down" class="absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 transform text-gray-400 pointer-events-none" />
                                     </div>
-                                    <p v-if="form.errors.client_id" class="text-sm text-red-600">{{ form.errors.client_id }}</p>
+                                    <InputError :message="form.errors.client_id" />
+                                    <p class="text-xs text-gray-500">Client pour lequel ce projet sera réalisé</p>
                                 </div>
 
-                                <!-- Statut -->
-                                <div class="space-y-3">
-                                    <Label for="status" class="text-sm font-medium text-gray-700">
-                                        Statut <span class="text-red-500">*</span>
-                                    </Label>
+                                <!-- Affichage du client présélectionné -->
+                                <div v-else-if="currentClient" class="space-y-2">
+                                    <Label class="text-sm font-medium text-gray-900">Client sélectionné</Label>
+                                    <div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50/50 p-4">
+                                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+                                            <Icon name="user" class="h-5 w-5 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-900">{{ currentClient.name }}</p>
+                                            <p v-if="currentClient.company" class="text-sm text-gray-600">{{ currentClient.company }}</p>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="client_id" :value="form.client_id" />
+                                    <p class="text-xs text-gray-500">Le client ne peut pas être modifié lors de la création depuis sa page</p>
+                                </div>
+
+                                <div class="grid gap-6 lg:grid-cols-2">
+                                    <!-- Statut (déplacé ici) -->
+
+                                    <div class="space-y-2">
+                                        <Label for="status" class="text-sm font-medium text-gray-900">Statut *</Label>
+                                        <div class="relative">
+                                            <Icon name="play-circle" class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 transform text-green-400 pointer-events-none" />
+                                            <select
+                                                id="status"
+                                                v-model="form.status"
+                                                required
+                                                class="h-12 w-full appearance-none rounded-lg border border-gray-200 bg-white py-2 pr-10 pl-11 text-sm transition-all focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 hover:border-gray-300"
+                                                :class="{ 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/10': form.errors.status }"
+                                            >
+                                                <option value="active">Actif</option>
+                                                <option value="completed">Terminé</option>
+                                                <option value="on_hold">En pause</option>
+                                                <option value="cancelled">Annulé</option>
+                                            </select>
+                                            <Icon name="chevron-down" class="absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 transform text-gray-400 pointer-events-none" />
+                                        </div>
+                                        <InputError :message="form.errors.status" />
+                                        <p class="text-xs text-gray-500">État actuel du projet</p>
+                                    </div>
+                                    
+                                    <!-- Espace vide pour maintenir la grille si client présélectionné -->
+                                    <div v-if="selectedClient"></div>
+                                </div>
+
+                                <!-- Nom du projet -->
+                                <div class="space-y-2">
+                                    <Label for="name" class="text-sm font-medium text-gray-900">Nom du projet *</Label>
                                     <div class="relative">
-                                        <Icon name="settings" class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-                                        <select
-                                            id="status"
-                                            v-model="form.status"
+                                        <Icon name="folder" class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 transform text-purple-400" />
+                                        <Input
+                                            id="name"
+                                            v-model="form.name"
+                                            type="text"
                                             required
-                                            class="h-11 w-full rounded-md border border-gray-200 bg-white px-3 py-2 pl-10 text-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:ring-offset-0"
-                                            :class="{ 'border-red-300': form.errors.status }"
-                                        >
-                                            <option value="active">Actif</option>
-                                            <option value="completed">Terminé</option>
-                                            <option value="on_hold">En pause</option>
-                                            <option value="cancelled">Annulé</option>
-                                        </select>
+                                            placeholder="ex: Site web corporate"
+                                            class="h-12 border-gray-200 pl-11 pr-4 transition-all focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 hover:border-gray-300 rounded-lg"
+                                            :class="{ 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/10': form.errors.name }"
+                                        />
                                     </div>
-                                    <p v-if="form.errors.status" class="text-sm text-red-600">{{ form.errors.status }}</p>
+                                    <InputError :message="form.errors.name" />
+                                    <p class="text-xs text-gray-500">Nom descriptif qui identifie clairement le projet</p>
                                 </div>
-                            </div>
-
-                            <!-- Nom du projet -->
-                            <div class="space-y-3">
-                                <Label for="name" class="text-sm font-medium text-gray-700">
-                                    Nom du projet <span class="text-red-500">*</span>
-                                </Label>
-                                <div class="relative">
-                                    <Icon name="folder" class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-                                    <Input
-                                        id="name"
-                                        v-model="form.name"
-                                        type="text"
-                                        required
-                                        placeholder="ex: Site web corporate"
-                                        class="h-11 border-gray-200 pl-10 focus:border-purple-500 focus:ring-purple-500"
-                                        :class="{ 'border-red-300': form.errors.name }"
-                                    />
-                                </div>
-                                <p v-if="form.errors.name" class="text-sm text-red-600">{{ form.errors.name }}</p>
                             </div>
                         </div>
 
-                        <!-- Section Détails -->
-                        <div class="space-y-6">
-                            <div class="border-b border-gray-100 pb-4">
-                                <h3 class="mb-1 text-lg font-semibold text-gray-900">Détails du projet</h3>
-                                <p class="text-sm text-gray-600">Informations complémentaires et planning</p>
+                        <!-- Section Planification -->
+                        <div class="space-y-8">
+                            <div class="space-y-1">
+                                <h3 class="text-xl font-semibold text-gray-900 tracking-tight">Planification</h3>
+                                <p class="text-sm text-gray-600">Définissez les détails et le planning de votre projet</p>
                             </div>
 
-                            <!-- Description -->
-                            <div class="space-y-3">
-                                <Label for="description" class="text-sm font-medium text-gray-700">Description</Label>
-                                <div class="relative">
-                                    <Icon name="file-text" class="absolute top-3 left-3 h-4 w-4 text-gray-400" />
-                                    <textarea
-                                        id="description"
-                                        v-model="form.description"
-                                        rows="4"
-                                        placeholder="Décrivez les objectifs et la portée du projet..."
-                                        class="min-h-[100px] w-full rounded-md border border-gray-200 bg-white px-3 py-3 pl-10 text-sm placeholder:text-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:ring-offset-0"
-                                        :class="{ 'border-red-300': form.errors.description }"
-                                    />
-                                </div>
-                                <p v-if="form.errors.description" class="text-sm text-red-600">{{ form.errors.description }}</p>
-                            </div>
-
-                            <!-- Dates et Budget -->
-                            <div class="grid gap-6 sm:grid-cols-3">
-                                <!-- Date de début -->
-                                <div class="space-y-3">
-                                    <Label for="start_date" class="text-sm font-medium text-gray-700">
-                                        Date de début <span class="text-red-500">*</span>
-                                    </Label>
+                            <div class="space-y-6">
+                                <!-- Description -->
+                                <div class="space-y-2">
+                                    <Label for="description" class="text-sm font-medium text-gray-900">Description</Label>
                                     <div class="relative">
-                                        <Icon name="calendar" class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-                                        <Input
-                                            id="start_date"
-                                            v-model="form.start_date"
-                                            type="date"
-                                            required
-                                            class="h-11 border-gray-200 pl-10 focus:border-purple-500 focus:ring-purple-500"
-                                            :class="{ 'border-red-300': form.errors.start_date || startDateError }"
-                                            @blur="markStartDateAsTouched"
-                                        />
+                                        <Icon name="file-text" class="absolute top-3.5 left-3.5 h-4 w-4 text-indigo-400" />
+                                        <textarea
+                                            id="description"
+                                            v-model="form.description"
+                                            rows="4"
+                                            placeholder="Décrivez les objectifs, le périmètre et les livrables du projet..."
+                                            class="min-h-[110px] w-full resize-none rounded-lg border border-gray-200 bg-white py-3.5 pr-4 pl-11 text-sm placeholder:text-gray-400 transition-all focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 hover:border-gray-300"
+                                            :class="{ 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/10': form.errors.description }"
+                                        ></textarea>
                                     </div>
-                                    <p v-if="form.errors.start_date" class="text-sm text-red-600">{{ form.errors.start_date }}</p>
-                                    <p v-if="startDateError" class="text-sm text-red-600">{{ startDateError }}</p>
+                                    <InputError :message="form.errors.description" />
+                                    <p class="text-xs text-gray-500">Détails sur les objectifs et les livrables attendus</p>
                                 </div>
 
-                                <!-- Date de fin -->
-                                <div class="space-y-3">
-                                    <Label for="end_date" class="text-sm font-medium text-gray-700">Date de fin</Label>
-                                    <div class="relative">
-                                        <Icon name="calendar" class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-                                        <Input
-                                            id="end_date"
-                                            v-model="form.end_date"
-                                            type="date"
-                                            :min="form.start_date"
-                                            class="h-11 border-gray-200 pl-10 focus:border-purple-500 focus:ring-purple-500"
-                                            :class="{ 
-                                                'border-red-300': form.errors.end_date || endDateError
-                                            }"
-                                            @blur="markEndDateAsTouched"
-                                        />
+                                <!-- Grille responsive pour les dates et budget -->
+                                <div class="grid gap-6 sm:grid-cols-3">
+                                    <!-- Date de début -->
+                                    <div class="space-y-2">
+                                        <Label for="start_date" class="text-sm font-medium text-gray-900">Date de début *</Label>
+                                        <div class="relative">
+                                            <Icon name="calendar" class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 transform text-emerald-400" />
+                                            <Input
+                                                id="start_date"
+                                                v-model="form.start_date"
+                                                type="date"
+                                                required
+                                                class="h-12 border-gray-200 pl-11 pr-4 transition-all focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 hover:border-gray-300 rounded-lg"
+                                                :class="{ 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/10': form.errors.start_date }"
+                                            />
+                                        </div>
+                                        <InputError :message="form.errors.start_date" />
+                                        <p class="text-xs text-gray-500">Début prévu du projet</p>
                                     </div>
-                                    <p v-if="form.errors.end_date" class="text-sm text-red-600">{{ form.errors.end_date }}</p>
-                                    <p v-if="endDateError" class="text-sm text-red-600">{{ endDateError }}</p>
-                                </div>
 
-                                <!-- Budget -->
-                                <div class="space-y-3">
-                                    <Label for="budget" class="text-sm font-medium text-gray-700">Budget (€)</Label>
-                                    <div class="relative">
-                                        <Icon name="banknote" class="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-                                        <Input
-                                            id="budget"
-                                            v-model="form.budget"
-                                            type="number"
-                                            step="0.01"
-                                            min="0"
-                                            placeholder="0.00"
-                                            class="h-11 border-gray-200 pl-10 focus:border-purple-500 focus:ring-purple-500"
-                                            :class="{ 'border-red-300': form.errors.budget }"
-                                        />
+                                    <!-- Date de fin -->
+                                    <div class="space-y-2">
+                                        <Label for="end_date" class="text-sm font-medium text-gray-900">Date de fin</Label>
+                                        <div class="relative">
+                                            <Icon name="calendar-check" class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 transform text-orange-400" />
+                                            <Input
+                                                id="end_date"
+                                                v-model="form.end_date"
+                                                type="date"
+                                                :min="form.start_date || undefined"
+                                                class="h-12 border-gray-200 pl-11 pr-4 transition-all focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 hover:border-gray-300 rounded-lg"
+                                                :class="{ 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/10': form.errors.end_date }"
+                                            />
+                                        </div>
+                                        <InputError :message="form.errors.end_date" />
+                                        <p class="text-xs text-gray-500">Fin prévue du projet</p>
                                     </div>
-                                    <p v-if="form.errors.budget" class="text-sm text-red-600">{{ form.errors.budget }}</p>
+
+                                    <!-- Budget -->
+                                    <div class="space-y-2">
+                                        <Label for="budget" class="text-sm font-medium text-gray-900">Budget (€)</Label>
+                                        <div class="relative">
+                                            <Icon name="banknote" class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 transform text-green-400" />
+                                            <Input
+                                                id="budget"
+                                                v-model="form.budget"
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                placeholder="0.00"
+                                                class="h-12 border-gray-200 pl-11 pr-4 transition-all focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 hover:border-gray-300 rounded-lg"
+                                                :class="{ 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/10': form.errors.budget }"
+                                            />
+                                        </div>
+                                        <InputError :message="form.errors.budget" />
+                                        <p class="text-xs text-gray-500">Budget initial prévu</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Actions -->
-                        <div class="flex flex-col-reverse items-center justify-between gap-4 border-t border-gray-100 pt-6 sm:flex-row">
-                            <Button variant="outline" type="button" @click="goBack" class="w-full sm:w-auto">
-                                <Icon name="x" class="mr-2 h-4 w-4" />
-                                Annuler
-                            </Button>
-                            <Button
-                                type="submit"
-                                :disabled="form.processing || !isDateRangeValid"
-                                class="w-full bg-purple-600 text-white hover:bg-purple-700 sm:w-auto disabled:opacity-50"
-                            >
-                                <Icon v-if="form.processing" name="loader-2" class="mr-2 h-4 w-4 animate-spin" />
-                                <Icon v-else name="check" class="mr-2 h-4 w-4" />
-                                Créer le projet
-                            </Button>
+                        <div class="flex flex-col gap-4 border-t border-gray-200 bg-gray-50/50 rounded-b-xl pt-8 pb-2 -mx-6 px-6 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="order-2 sm:order-1">
+                                <Button
+                                    variant="outline"
+                                    type="button"
+                                    @click="handleCancel"
+                                    class="h-12 px-6 text-sm font-medium transition-all hover:bg-gray-100 border-gray-300"
+                                >
+                                    <Icon name="x" class="mr-2 h-4 w-4" />
+                                    Annuler
+                                </Button>
+                            </div>
+                            <div class="order-1 sm:order-2">
+                                <Button
+                                    type="submit"
+                                    :disabled="form.processing"
+                                    class="h-12 px-8 w-full sm:w-auto bg-purple-600 text-white font-medium transition-all hover:bg-purple-700 hover:shadow-lg hover:shadow-purple-600/25 focus:ring-4 focus:ring-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
+                                >
+                                    <Icon v-if="form.processing" name="loader-2" class="mr-2 h-4 w-4 animate-spin" />
+                                    <Icon v-else name="check" class="mr-2 h-4 w-4" />
+                                    {{ form.processing ? 'Création en cours...' : 'Créer le projet' }}
+                                </Button>
+                            </div>
                         </div>
                     </form>
                 </CardContent>
             </Card>
 
-            <!-- Sidebar avec conseils -->
-            <div class="space-y-6 md:col-span-4">
-                <Card class="border-0 bg-gradient-to-br from-purple-50 to-purple-100 shadow-sm">
-                    <CardHeader class="pb-4">
-                        <CardTitle class="flex items-center gap-2 text-purple-900">
-                            <Icon name="lightbulb" class="h-5 w-5" />
-                            Conseils
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent class="space-y-4 text-sm text-purple-800">
-                        <div class="flex items-start gap-3">
-                            <Icon name="check-circle" class="mt-0.5 h-4 w-4 text-purple-600" />
-                            <p>Choisissez un nom de projet clair et descriptif pour faciliter l'identification.</p>
+            <!-- Sidebar avec guides -->
+            <div class="space-y-6 form:col-span-4">
+                <!-- Guide rapide -->
+                <Card class="border-0 bg-gradient-to-br from-purple-50 via-purple-50 to-indigo-50 shadow-sm overflow-hidden">
+                    <CardContent class="p-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100">
+                                <Icon name="lightbulb" class="h-4 w-4 text-purple-600" />
+                            </div>
+                            <h3 class="text-base font-semibold text-purple-900">Guide rapide</h3>
                         </div>
-                        <div class="flex items-start gap-3">
-                            <Icon name="check-circle" class="mt-0.5 h-4 w-4 text-purple-600" />
-                            <p>Le statut "En pause" est parfait pour les projets en cours de négociation.</p>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <Icon name="check-circle" class="mt-0.5 h-4 w-4 text-purple-600" />
-                            <p>Définissez un budget initial même approximatif pour un meilleur suivi.</p>
+                        <div class="space-y-3 text-sm text-purple-800">
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-5 w-5 items-center justify-center rounded-full bg-purple-200 mt-0.5">
+                                    <div class="h-2 w-2 rounded-full bg-purple-600"></div>
+                                </div>
+                                <p>Sélectionnez d'abord le client pour organiser le projet</p>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-5 w-5 items-center justify-center rounded-full bg-purple-200 mt-0.5">
+                                    <div class="h-2 w-2 rounded-full bg-purple-600"></div>
+                                </div>
+                                <p>Les dates de fin doivent être postérieures au début</p>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-5 w-5 items-center justify-center rounded-full bg-purple-200 mt-0.5">
+                                    <div class="h-2 w-2 rounded-full bg-purple-600"></div>
+                                </div>
+                                <p>Une description détaillée aide au suivi du projet</p>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card class="border-0 bg-white shadow-sm">
-                    <CardHeader class="pb-4">
-                        <CardTitle class="flex items-center gap-2 text-gray-900">
-                            <Icon name="info" class="h-5 w-5" />
-                            Prochaines étapes
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent class="space-y-3 text-sm">
-                        <div class="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-                            <div class="flex h-6 w-6 items-center justify-center rounded-full bg-purple-100 text-xs font-medium text-purple-600">
-                                1
+                <!-- Statuts disponibles -->
+                <Card class="border border-gray-100 shadow-sm">
+                    <CardContent class="p-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+                                <Icon name="info" class="h-4 w-4 text-gray-600" />
                             </div>
-                            <span>Créer le projet</span>
+                            <h3 class="text-base font-semibold text-gray-900">Statuts disponibles</h3>
                         </div>
-                        <div class="flex items-center gap-3 rounded-lg bg-gray-50 p-3 opacity-60">
-                            <div class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-500">
-                                2
+                        <div class="space-y-3">
+                            <div class="rounded-xl border border-green-200 bg-green-50/50 p-4">
+                                <div class="mb-2 flex items-center gap-3">
+                                    <div class="flex h-6 w-6 items-center justify-center rounded-full bg-green-100">
+                                        <Icon name="play-circle" class="h-3 w-3 text-green-600" />
+                                    </div>
+                                    <span class="font-medium text-green-900">Actif</span>
+                                </div>
+                                <p class="text-sm text-green-800">Projet en cours de réalisation</p>
                             </div>
-                            <span>Ajouter des événements</span>
-                        </div>
-                        <div class="flex items-center gap-3 rounded-lg bg-gray-50 p-3 opacity-60">
-                            <div class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs font-medium text-gray-500">
-                                3
+                            <div class="rounded-xl border border-blue-200 bg-blue-50/50 p-4">
+                                <div class="mb-2 flex items-center gap-3">
+                                    <div class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100">
+                                        <Icon name="check-circle" class="h-3 w-3 text-blue-600" />
+                                    </div>
+                                    <span class="font-medium text-blue-900">Terminé</span>
+                                </div>
+                                <p class="text-sm text-blue-800">Projet livré et finalisé</p>
                             </div>
-                            <span>Suivre l'avancement</span>
+                            <div class="rounded-xl border border-yellow-200 bg-yellow-50/50 p-4">
+                                <div class="mb-2 flex items-center gap-3">
+                                    <div class="flex h-6 w-6 items-center justify-center rounded-full bg-yellow-100">
+                                        <Icon name="pause-circle" class="h-3 w-3 text-yellow-600" />
+                                    </div>
+                                    <span class="font-medium text-yellow-900">En pause</span>
+                                </div>
+                                <p class="text-sm text-yellow-800">Projet temporairement suspendu</p>
+                            </div>
+                            <div class="rounded-xl border border-red-200 bg-red-50/50 p-4">
+                                <div class="mb-2 flex items-center gap-3">
+                                    <div class="flex h-6 w-6 items-center justify-center rounded-full bg-red-100">
+                                        <Icon name="x-circle" class="h-3 w-3 text-red-600" />
+                                    </div>
+                                    <span class="font-medium text-red-900">Annulé</span>
+                                </div>
+                                <p class="text-sm text-red-800">Projet abandonné ou annulé</p>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -305,39 +405,72 @@
 </template>
 
 <script setup lang="ts">
-import { toRef } from 'vue'
-import Icon from '@/components/Icon.vue'
+import { computed, watch } from 'vue'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useProjectCreateForm } from '@/composables/projects/create/useProjectCreateForm'
-import type { ProjectCreateClient } from '@/types/projects/create'
+import Icon from '@/components/Icon.vue'
+import InputError from '@/components/InputError.vue'
+import { useForm } from '@inertiajs/vue3'
+import { route } from 'ziggy-js'
 
-interface Props {
-    clients: ProjectCreateClient[]
-    selectedClientId: number | null
-    isLoading: boolean
-    hasError: boolean
+interface Client {
+    id: number
+    name: string
+    company?: string
 }
 
-const props = defineProps<Props>()
+interface Props {
+    isLoading: boolean
+    hasError: boolean
+    clients?: Client[]
+    selectedClient?: Client | null
+}
 
-// Composable pour la gestion du formulaire
-const {
-    form,
-    isDateRangeValid,
-    startDateError,
-    endDateError,
-    submit,
-    goBack,
-    resetForm,
-    markStartDateAsTouched,
-    markEndDateAsTouched,
-} = useProjectCreateForm(toRef(props, 'clients'), toRef(props, 'selectedClientId'))
-
-// Expose resetForm method to parent
-defineExpose({
-    resetForm
+const props = withDefaults(defineProps<Props>(), {
+    clients: () => [],
+    selectedClient: null
 })
+
+// Formulaire simple sans le composable complexe
+const form = useForm({
+    client_id: props.selectedClient ? props.selectedClient.id.toString() : '',
+    name: '',
+    description: '',
+    status: 'active',
+    start_date: '',
+    end_date: '',
+    budget: '',
+})
+
+// Watcher pour mettre à jour le client_id quand selectedClient change
+watch(() => props.selectedClient, (newClient) => {
+    if (newClient && !form.client_id) {
+        form.client_id = newClient.id.toString()
+    }
+}, { immediate: true })
+
+// Client actuel (présélectionné ou null)
+const currentClient = computed(() => {
+    if (props.selectedClient) {
+        return props.selectedClient
+    }
+    if (form.client_id && props.clients.length > 0) {
+        return props.clients.find(client => client.id.toString() === form.client_id) || null
+    }
+    return null
+})
+
+const submit = () => {
+    form.post(route('projects.store'))
+}
+
+const handleCancel = () => {
+    window.history.back()
+}
+
+const reloadPage = () => {
+    window.location.reload()
+}
 </script>

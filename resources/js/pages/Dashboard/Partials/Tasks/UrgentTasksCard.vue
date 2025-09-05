@@ -1,17 +1,11 @@
 <template>
-    <Card class="group relative overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-white to-gray-50/50 shadow-xl shadow-gray-900/5 ring-1 ring-gray-900/5 transition-all duration-300 hover:shadow-2xl hover:shadow-gray-900/10 self-stretch w-full lg:w-[35%] lg:min-w-[20rem]">
+    <Card class="group relative overflow-hidden rounded-2xl border-0 bg-gradient-to-br from-white to-gray-50/50 shadow-xl shadow-gray-900/5 ring-1 ring-gray-900/5 transition-all duration-300 hover:shadow-2xl hover:shadow-gray-900/10 self-stretch w-full lg:w-[50%] lg:min-w-[20rem]">
         <!-- Subtle gradient overlay -->
         <div class="absolute inset-0 bg-gradient-to-br from-blue-50/30 via-transparent to-orange-50/30 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
 
         <CardHeader class="relative z-10 flex-shrink-0 space-y-0 pb-0">
             <div class="flex items-start justify-between">
                 <div class="flex items-start gap-3">
-                    <div :class="[
-                        'flex h-12 w-12 items-center justify-center rounded-xl transition-all duration-200',
-                        urgentOnly ? 'bg-gradient-to-br from-orange-500 to-red-600 shadow-lg shadow-orange-500/25' : 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/25'
-                    ]">
-                        <OptimizedIcon :name="urgentOnly ? 'alert-triangle' : 'list-todo'" :size="20" class="text-white" preload />
-                    </div>
                     <div class="space-y-1">
                         <CardTitle class="text-xl font-bold text-gray-900">
                             {{ urgentOnly ? 'Tâches urgentes' : 'Tâches à faire' }}
@@ -22,7 +16,7 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col items-end gap-2">
+                <div class="flex flex-col items-center gap-2">
                     <Badge
                         class="h-8 min-w-[2.5rem] justify-center text-sm font-semibold shadow-sm"
                         :class="urgentOnly ? 'bg-destructive' : 'bg-blue-600'"

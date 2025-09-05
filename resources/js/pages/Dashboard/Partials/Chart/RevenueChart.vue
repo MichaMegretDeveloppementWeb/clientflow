@@ -150,7 +150,7 @@
                                 datasetVisibility.revenus ? 'bg-green-500 ring-2 ring-green-200' : 'bg-gray-300'
                             ]"
                         ></div>
-                        <span>Revenus réels</span>
+                        <span>Revenus perçus</span>
                         <Icon
                             :name="datasetVisibility.revenus ? 'eye' : 'eye-off'"
                             class="w-4 h-4 opacity-70"

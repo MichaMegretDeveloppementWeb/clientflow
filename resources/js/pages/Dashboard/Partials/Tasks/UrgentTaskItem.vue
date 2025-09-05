@@ -5,7 +5,7 @@
         :class="taskClasses"
     >
         <!-- Icône de statut -->
-        <div
+<!--        <div
             class="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-xl ring-1 ring-inset"
             :class="iconClasses"
         >
@@ -15,13 +15,20 @@
                 :class="iconColorClasses"
                 preload
             />
-        </div>
+        </div>-->
 
         <!-- Contenu principal -->
         <div class="min-w-0 flex-1">
             <!-- Titre et badge -->
-            <div class="mb-2 flex flex-col gap-2">
-                <h4 class="break-words font-medium leading-tight text-gray-900">
+
+            <div class="mb-2">
+                <h4 class="break-words font-medium text-gray-900 leading-7 flex items-center gap-2">
+                    <span
+                        class="inline-flex items-center px-2 py-0.5 rounded-full text-sm font-medium border"
+                        :class="getTypeBadgeClasses(task)"
+                    >
+                        {{ task.event_type === 'billing' ? 'A envoyer' : 'A faire' }}
+                    </span>
                     {{ task.name }}
                 </h4>
             </div>
@@ -43,10 +50,10 @@
             <!-- Badge de statut temporel -->
             <div class="flex">
                 <div
-                    class="inline-flex w-fit items-center gap-1 rounded-full text-xs font-medium"
+                    class="inline-flex items-center gap-1 rounded-full text-xs font-medium"
                     :class="getTimeBadgeClasses(task)"
                 >
-                    <OptimizedIcon :name="getTimeBadgeIcon(task)" :size="12" />
+                    <OptimizedIcon :name="getTimeBadgeIcon(task)" :size="13" />
                     {{ getTimeBadgeText(task) }}
                 </div>
             </div>
@@ -69,6 +76,27 @@ interface Props {
 
 const props = defineProps<Props>();
 
+// Obtenir les classes du badge de type
+const getTypeBadgeClasses = (task: Task): string => {
+    const dateStr = getReferenceDate(task);
+    if (!dateStr) return 'bg-gray-50 text-gray-700 border-gray-200';
+
+    const date = new Date(dateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    date.setHours(0, 0, 0, 0);
+
+    const diffDays = Math.round((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) {
+        return 'bg-red-50 text-red-700 border-red-200';
+    }
+    if (task.event_type === 'billing') {
+        return 'bg-violet-50 text-violet-700 border-violet-200';
+    } else {
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+    }
+};
+
 // Classes calculées pour le style
 const taskClasses = computed(() => {
 
@@ -83,37 +111,6 @@ const taskClasses = computed(() => {
     return 'hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm';
 });
 
-const iconClasses = computed(() => {
-    if (props.task.is_overdue) {
-        return 'bg-red-50 ring-red-200';
-    }
-
-    if (isToday(getReferenceDate(props.task))) {
-        return 'bg-amber-50 ring-amber-200';
-    }
-
-    if (props.task.event_type === 'step') {
-        return 'bg-blue-50 ring-blue-200';
-    }
-
-    return 'bg-emerald-50 ring-emerald-200';
-});
-
-const iconColorClasses = computed(() => {
-    if (props.task.is_overdue) {
-        return 'text-red-600';
-    }
-
-    if (isToday(getReferenceDate(props.task))) {
-        return 'text-amber-600';
-    }
-
-    if (props.task.event_type === 'step') {
-        return 'text-blue-600';
-    }
-
-    return 'text-emerald-600';
-});
 
 // Utilitaires
 const formatCurrency = (amount: number): string => {
@@ -152,7 +149,7 @@ const getTimeBadgeText = (task: Task): string => {
     // Si en retard - on affiche le retard
     if (diffDays < 0) {
         const daysOverdue = Math.abs(diffDays);
-        return `${daysOverdue}j de retard`;
+        return `${daysOverdue} j de retard`;
     }
 
     // Si pas en retard - on affiche la date au format d/m/Y
@@ -178,7 +175,7 @@ const getTimeBadgeText = (task: Task): string => {
 // Nouveau : obtenir les classes CSS du badge
 const getTimeBadgeClasses = (task: Task): string => {
     const dateStr = getReferenceDate(task);
-    if (!dateStr) return 'bg-gray-50 text-gray-700 ring-gray-600/20';
+    if (!dateStr) return 'bg-gray-50 text-gray-700 border-gray-200';
 
     const date = new Date(dateStr);
     const today = new Date();
@@ -208,7 +205,7 @@ const getTimeBadgeClasses = (task: Task): string => {
     }
 
     // Plus tard
-    return 'text-gray-700';
+    return 'text-slate-700';
 };
 
 // Nouveau : obtenir l'icône du badge

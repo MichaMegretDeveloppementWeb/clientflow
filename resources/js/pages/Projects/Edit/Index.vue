@@ -2,7 +2,7 @@
     <Head :title="pageTitle" />
 
     <AppLayout>
-        <div class="space-y-8 max-w-5xl m-auto">
+        <div class="space-y-8 max-w-7xl m-auto">
             <!-- Header -->
             <ProjectEditHeader
                 :project="project"

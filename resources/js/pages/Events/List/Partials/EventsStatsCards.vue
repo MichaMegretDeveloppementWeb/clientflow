@@ -108,11 +108,14 @@ const statsCards = computed((): StatsCardData[] => [
 const hasValidStats = computed(() => {
     // Des stats sont valides si l'objet existe avec les propriétés attendues
     // Même si toutes les valeurs sont à 0, ce sont des stats valides
-    return props.stats && 
+    const isValid = props.stats &&
            typeof props.stats.total === 'number' &&
            typeof props.stats.todo === 'number' &&
            typeof props.stats.done === 'number' &&
            typeof props.stats.overdue === 'number'
+
+    console.log('EventsStatsCards - hasValidStats:', isValid, 'stats:', props.stats)
+    return isValid
 })
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

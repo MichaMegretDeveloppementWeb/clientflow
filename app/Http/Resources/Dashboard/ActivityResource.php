@@ -88,22 +88,14 @@ class ActivityResource extends JsonResource
         }
 
         $now = now();
-        $diffInSeconds = round($now->diffInSeconds($timestamp, true));
-        $diffInMinutes = round($now->diffInMinutes($timestamp, true));
-        $diffInHours = round($now->diffInHours($timestamp, true));
         $diffInDays = round($now->diffInDays($timestamp, true));
 
         // Moins de 5 jours = temps relatif
-        if ($diffInDays < 5) {
-            if ($diffInSeconds < 60) {
-                return 'Il y a quelques secondes';
-            } elseif ($diffInMinutes < 60) {
-                return 'Il y a ' . $diffInMinutes . ' minute' . ($diffInMinutes > 1 ? 's' : '');
-            } elseif ($diffInHours < 24) {
-                return 'Il y a ' . $diffInHours . ' heure' . ($diffInHours > 1 ? 's' : '');
-            } else {
-                return 'Il y a ' . $diffInDays . ' jour' . ($diffInDays > 1 ? 's' : '');
-            }
+        if ($diffInDays < 1) {
+            return 'Aujourd\'hui';
+        }
+        elseif ($diffInDays < 5){
+            return 'Il y a ' . $diffInDays . ' jour' . ($diffInDays > 1 ? 's' : '');
         }
 
         // Plus de 5 jours = date formatée

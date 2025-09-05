@@ -7,15 +7,15 @@ export function useActivities() {
   const isLoading = ref(true)
   const error = ref<string | null>(null)
   const currentPage = ref(1)
-  const itemsPerPage = 5
+  const itemsPerPage = 6
 
   // Computed
   const activitiesCount = computed(() => activities.value.length)
   const hasActivities = computed(() => activitiesCount.value > 0)
-  const urgentActivitiesCount = computed(() => 
-    activities.value.filter(activity => activity.is_urgent).length
+  const billingActivitiesCount = computed(() =>
+    activities.value.filter(activity => activity.type === 'billing').length
   )
-  
+
   // Pagination computeds
   const totalPages = computed(() => Math.ceil(activities.value.length / itemsPerPage))
   const paginatedActivities = computed(() => {
@@ -43,7 +43,7 @@ export function useActivities() {
     }
 
     activities.value.forEach(activity => {
-      const activityDate = new Date(activity.time)
+      const activityDate = new Date(activity.timestamp)
       const activityDay = new Date(activityDate.getFullYear(), activityDate.getMonth(), activityDate.getDate())
 
       if (activityDay.getTime() === today.getTime()) {
@@ -137,33 +137,23 @@ export function useActivities() {
     // Formatage personnalisé avec séparateurs très visibles
     const rounded = Math.round(amount)
     const numberStr = rounded.toString()
-    
+
     // Utiliser des espaces insécables pour qu'ils soient tous visibles
     const formatted = numberStr.replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0\u00A0\u00A0') // 3 espaces insécables
-    
+
     return `${formatted}\u00A0€` // Espace insécable avant €
   }
 
   const getActivityIconColor = (activity: Activity): string => {
-    switch (activity.color) {
-      case 'red': return 'text-red-600'
-      case 'green': return 'text-green-600'
-      case 'blue': return 'text-blue-600'
-      case 'yellow': return 'text-yellow-600'
-      case 'purple': return 'text-purple-600'
-      case 'orange': return 'text-orange-600'
-      default: return 'text-gray-600'
-    }
+    return activity.icon_color || 'text-gray-600'
   }
 
   const getActivityBgColor = (activity: Activity): string => {
-    switch (activity.color) {
-      case 'red': return 'bg-red-50 ring-red-200'
-      case 'green': return 'bg-green-50 ring-green-200'
-      case 'blue': return 'bg-blue-50 ring-blue-200'
-      case 'yellow': return 'bg-yellow-50 ring-yellow-200'
-      case 'purple': return 'bg-purple-50 ring-purple-200'
-      case 'orange': return 'bg-orange-50 ring-orange-200'
+    switch (activity.type) {
+      case 'client': return 'bg-blue-50 ring-blue-200'
+      case 'project': return 'bg-purple-50 ring-purple-200'
+      case 'step': return 'bg-green-50 ring-green-200'
+      case 'billing': return 'bg-emerald-50 ring-emerald-200'
       default: return 'bg-gray-50 ring-gray-200'
     }
   }
@@ -187,29 +177,29 @@ export function useActivities() {
     isLoading,
     error,
     currentPage,
-    
+
     // Computed
     activitiesCount,
     hasActivities,
-    urgentActivitiesCount,
+    billingActivitiesCount,
     groupedActivities,
     totalPages,
     paginatedActivities,
     hasPrevPage,
     hasNextPage,
-    
+
     // Actions
     loadActivities,
     refreshActivities,
     goToPrevPage,
     goToNextPage,
-    
+
     // Utilities
     formatTime,
     formatCurrency,
     getActivityIconColor,
     getActivityBgColor,
-    
+
     // Grouped exports for convenience
     state,
     actions,

@@ -38,7 +38,7 @@ class DashboardRevenueService
                 'labels' => $labels,
                 'datasets' => [
                     [
-                        'label' => 'Revenus réels',
+                        'label' => 'Revenus perçus',
                         'data' => $revenueData,
                         'borderColor' => 'rgb(34, 197, 94)',
                         'backgroundColor' => 'rgba(34, 197, 94, 0.1)',

@@ -4,9 +4,6 @@
         <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <div class="mb-2 flex items-center gap-3">
-                    <div class="rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-2 shadow-sm">
-                        <OptimizedIcon name="bar-chart-3" :size="24" color="white" preload />
-                    </div>
                     <div>
                         <h1 class="text-2xl font-bold tracking-tight text-gray-900">
                             Tableau de bord

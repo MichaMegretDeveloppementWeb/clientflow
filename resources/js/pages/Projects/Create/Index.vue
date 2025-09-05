@@ -14,6 +14,7 @@
                 ref="formRef"
                 :clients="clients"
                 :selected-client-id="selectedClientId"
+                :selected-client="selectedClient"
                 :is-loading="isLoading"
                 :has-error="hasError"
             />
@@ -44,6 +45,7 @@ const formRef = ref<InstanceType<typeof ProjectCreateForm> | null>(null)
 const {
     clients,
     selectedClientId,
+    selectedClient,
     isLoading,
     hasError
 } = useProjectCreateManager(props.skeletonData, props.data)

@@ -1,19 +1,28 @@
 // Activity-related types for dashboard components
 
 export interface Activity {
-  id: string
-  type: 'urgent_task' | 'completed_task' | 'project_update' | 'client_update'
-  title: string
-  description: string
-  time: string
-  icon: string
-  color: 'red' | 'green' | 'blue' | 'yellow' | 'purple' | 'orange'
-  link?: string
-  amount?: number
-  project_name?: string
-  client_name?: string
-  is_urgent: boolean
-  metadata?: Record<string, any>
+    id: string;
+    type: 'client' | 'project' | 'step' | 'billing';
+    entity_type: string;
+    name: string;
+    company?: string;
+    status: 'created' | 'done' | 'sent' | 'paid';
+    status_label: string;
+    timestamp: string;
+    time_ago: string;
+    link: string;
+    parent_project?: {
+        id: number;
+        name: string;
+    } | null;
+    parent_client?: {
+        id: number;
+        name: string;
+    } | null;
+    amount?: number | null;
+    formatted_amount?: string | null;
+    icon: string;
+    icon_color: string;
 }
 
 export interface ActivitiesState {
@@ -33,33 +42,27 @@ export interface ActivitiesApiResponse {
 
 // Activity types enum
 export enum ActivityType {
-  URGENT_TASK = 'urgent_task',
-  COMPLETED_TASK = 'completed_task',
-  PROJECT_UPDATE = 'project_update',
-  CLIENT_UPDATE = 'client_update'
+  CLIENT = 'client',
+  PROJECT = 'project',
+  STEP = 'step',
+  BILLING = 'billing'
 }
 
-// Activity colors enum
-export enum ActivityColor {
-  RED = 'red',
-  GREEN = 'green',
-  BLUE = 'blue',
-  YELLOW = 'yellow',
-  PURPLE = 'purple',
-  ORANGE = 'orange'
+// Activity status enum
+export enum ActivityStatus {
+  CREATED = 'created',
+  DONE = 'done',
+  SENT = 'sent',
+  PAID = 'paid'
 }
 
 // Type guards
-export function isUrgentActivity(activity: Activity): boolean {
-  return activity.is_urgent === true || activity.type === ActivityType.URGENT_TASK
-}
-
 export function hasAmount(activity: Activity): boolean {
   return activity.amount !== undefined && activity.amount !== null
 }
 
 export function hasProjectInfo(activity: Activity): boolean {
-  return activity.project_name !== undefined && activity.project_name !== null
+  return activity.parent_project !== undefined && activity.parent_project !== null
 }
 
 // Activity formatting helpers

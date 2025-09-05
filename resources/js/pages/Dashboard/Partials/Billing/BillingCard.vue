@@ -5,7 +5,7 @@
         :class="linkClasses"
     >
         <Card
-            class="h-full rounded-xl border border-gray-200/60 bg-white shadow-sm transition-all duration-300"
+            class="h-full rounded-xl border border-gray-200/60 bg-white shadow-sm transition-all duration-300 py-0"
             :class="cardClasses"
         >
             <CardContent class="flex h-full flex-col p-4 sm:p-6">

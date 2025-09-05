@@ -20,7 +20,7 @@ class DashboardEventsService
         try {
             $userId = auth()->id();
 
-            return $this->tasksRepository->getUpcomingTasks($userId, $urgentOnly, $limit);
+            return $this->tasksRepository->getUpcomingTasks($userId, $urgentOnly);
         } catch (\Exception $e) {
             // Log error for debugging but return empty collection
             \Log::error('Error fetching upcoming tasks: '.$e->getMessage());

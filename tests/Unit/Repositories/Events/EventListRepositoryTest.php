@@ -238,14 +238,13 @@ class EventListRepositoryTest extends TestCase
         $stats = $this->repository->getGlobalStatistics();
 
         $this->assertIsArray($stats);
-        $this->assertArrayHasKey('totalEvents', $stats);
-        $this->assertArrayHasKey('stepEvents', $stats);
-        $this->assertArrayHasKey('billingEvents', $stats);
-        $this->assertArrayHasKey('totalRevenue', $stats);
-        $this->assertEquals(4, $stats['totalEvents']);
-        $this->assertEquals(2, $stats['stepEvents']);
-        $this->assertEquals(2, $stats['billingEvents']);
-        $this->assertEquals(3000, $stats['totalRevenue']);
+        $this->assertArrayHasKey('total', $stats);
+        $this->assertArrayHasKey('todo', $stats);
+        $this->assertArrayHasKey('done', $stats);
+        $this->assertArrayHasKey('overdue', $stats);
+        $this->assertEquals(4, $stats['total']);
+        $this->assertEquals(2, $stats['todo']); // todo + to_send
+        $this->assertEquals(2, $stats['done']); // done + sent
     }
 
     public function test_get_global_statistics_filters_by_user(): void
@@ -277,8 +276,8 @@ class EventListRepositoryTest extends TestCase
 
         $stats = $this->repository->getGlobalStatistics();
 
-        $this->assertEquals(3, $stats['totalEvents']);
-        $this->assertEquals(9450, $stats['totalRevenue']); // 3 * 3150 = 9450
+        $this->assertEquals(3, $stats['total']);
+        $this->assertEquals(3, $stats['todo']); // 3 billing events with status 'to_send'
     }
 
     public function test_get_global_statistics_handles_empty_data(): void
@@ -286,10 +285,10 @@ class EventListRepositoryTest extends TestCase
         $stats = $this->repository->getGlobalStatistics();
 
         $this->assertIsArray($stats);
-        $this->assertEquals(0, $stats['totalEvents']);
-        $this->assertEquals(0, $stats['stepEvents']);
-        $this->assertEquals(0, $stats['billingEvents']);
-        $this->assertEquals(0, $stats['totalRevenue']);
+        $this->assertEquals(0, $stats['total']);
+        $this->assertEquals(0, $stats['todo']);
+        $this->assertEquals(0, $stats['done']);
+        $this->assertEquals(0, $stats['overdue']);
     }
 
     public function test_get_paginated_combines_multiple_filters(): void

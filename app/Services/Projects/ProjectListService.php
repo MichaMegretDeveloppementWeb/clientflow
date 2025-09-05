@@ -92,7 +92,7 @@ class ProjectListService
         // Calculate budget_progress (avoid accessor)
         $budgetProgress = 0;
         if ($project->budget && $project->budget > 0) {
-            $budgetProgress = min(($project->total_billed / $project->budget) * 100, 100);
+            $budgetProgress = $project->total_billed / $project->budget * 100;
         }
 
         // Calculate budget_exceeded (avoid accessor)

@@ -78,6 +78,29 @@
                     </span>
                 </div>
 
+                <!-- Barre de progression du budget -->
+                <div v-if="project.budget && project.budget > 0" class="mt-2 mb-3 max-w-3xl">
+                    <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+                        <span class="truncate">
+                            {{ Math.round(project.budget_progress) }}% du budget utilisé
+                        </span>
+                        <span v-if="project.budget_exceeded" class="text-red-600 font-medium whitespace-nowrap ml-2">
+                            Dépassé
+                        </span>
+                    </div>
+                    <div class="h-1 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                            class="h-full transition-all duration-300"
+                            :class="{
+                                'bg-gradient-to-r from-emerald-500 to-emerald-600': project.budget_progress < 70,
+                                'bg-gradient-to-r from-orange-500 to-orange-600': project.budget_progress >= 70 && project.budget_progress < 100,
+                                'bg-gradient-to-r from-red-500 to-red-600': project.budget_progress >= 100
+                            }"
+                            :style="{ width: Math.min(project.budget_progress, 100) + '%' }"
+                        ></div>
+                    </div>
+                </div>
+
                 <!-- Indicateurs d'alerte -->
                 <div v-if="hasAnyAlerts(project)" class="flex flex-wrap items-center gap-2 mt-2">
                     <!-- Projet en retard -->
@@ -118,10 +141,10 @@
                             @click.stop
                             title="Actions"
                         >
-                            <Icon name="more-horizontal" class="h-3.5 w-3.5" />
+                            <Icon name="more-horizontal" class="h-3.5 w-3.5 md:h-5 md:w-5" />
                         </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" class="w-40">
+                    <DropdownMenuContent align="end" class="w-max">
                         <DropdownMenuItem @click.stop="handleView">
                             <Icon name="external-link" class="mr-2 h-3.5 w-3.5" />
                             Voir le projet
@@ -129,6 +152,10 @@
                         <DropdownMenuItem @click.stop="handleEdit">
                             <Icon name="edit" class="mr-2 h-3.5 w-3.5" />
                             Modifier
+                        </DropdownMenuItem>
+                        <DropdownMenuItem @click.stop="handleAddEvent" class="text-green-600 focus:text-green-600 focus:bg-green-50">
+                            <Icon name="plus-circle" class="mr-2 h-3.5 w-3.5 text-green-600" />
+                            Ajouter un événement
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -176,6 +203,7 @@ const emit = defineEmits<{
     'project-click': [project: ProjectDTO]
     'view': [project: ProjectDTO]
     'edit': [project: ProjectDTO]
+    'add-event': [project: ProjectDTO]
     'delete': [projectId: number]
 }>()
 
@@ -191,6 +219,10 @@ const handleView = () => {
 
 const handleEdit = () => {
     emit('edit', props.project)
+}
+
+const handleAddEvent = () => {
+    emit('add-event', props.project)
 }
 
 const handleDelete = () => {
@@ -249,8 +281,8 @@ const isProjectOverdue = (project: ProjectDTO): boolean => {
 }
 
 const hasAnyAlerts = (project: ProjectDTO): boolean => {
-    return isProjectOverdue(project) || 
-           project.has_overdue_events || 
+    return isProjectOverdue(project) ||
+           project.has_overdue_events ||
            project.has_payment_overdue
 }
 </script>

@@ -26,6 +26,7 @@ yarn-error.log
 # Claude & Development Documentation
 CLAUDE.md
 REFACTORING_SUMMARY.md
+CONVERSATION_RECAP.md
 FullConceptionConcept_laravel_Vue/
 prompt-claude.txt
 cookies.txt

@@ -48,7 +48,7 @@ export function useRevenueChart() {
             }
 
             const data: RevenueChartResponse = await response.json()
-            
+
             // Vérifier s'il y a une erreur dans les données retournées
             if (data.revenue_chart?.error) {
                 // Afficher l'erreur détaillée en console en mode développement
@@ -101,8 +101,9 @@ export function useRevenueChart() {
     }
 
     const getTotalRevenue = computed(() => {
+        console.log(datasets.value);
         if (!datasets.value.length) return 0
-        const revenueDataset = datasets.value.find(d => d.label.includes('réels'))
+        const revenueDataset = datasets.value.find(d => d.label.includes('perçus'))
         return revenueDataset?.data.reduce((sum, value) => sum + value, 0) ?? 0
     })
 

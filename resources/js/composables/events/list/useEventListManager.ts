@@ -248,7 +248,7 @@ export function useEventListManager(initialProps: EventListProps) {
             preserveScroll: true,
             onStart: () => {
                 globalState.isLoading = true
-                loadingStates.events = true
+                loadingStates.stats = true
             },
             onFinish: () => {
                 const pageData = usePage().props.eventsData as any
@@ -273,11 +273,13 @@ export function useEventListManager(initialProps: EventListProps) {
 
                 globalState.isLoading = false
                 loadingStates.events = false
+                loadingStates.stats = false
             },
             onError: (errors) => {
                 globalState.error = errors
                 globalState.isLoading = false
                 loadingStates.events = false
+                loadingStates.stats = false
             }
         })
     }
